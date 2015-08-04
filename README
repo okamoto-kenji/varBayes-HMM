@@ -1,0 +1,53 @@
+Variational Bayes-Hidden Markov model (VB-HMM) analysis programs:
+
+Kenji Okamoto and Yasushi Sako, RIKEN
+revised: 2014.07.31
+
+System Requirements:
+  VB-HMM softwares can be built on darwin or linux operating system.
+
+  GNU Scientific Library (GSL) must be installed to build softwares.
+  http://www.gnu.org/software/gsl/
+
+Build:
+  Type the following line on command-line to build softwares.
+
+    make [command]
+
+  Avilable [command] is as follows:
+    ts       : to build VB-HMM-TS (vbHmmTs)
+    fret     : to build VB-HMM-TS-FRET (vbHmmTsFret)
+    pc       : to build VB-HMM-PC (vbHmmPc)
+    pcFret   : to build VB-HMM-PC-FRET (vbHmmPcFret)
+    template : to build template VB-HMM (vbHmm_template)
+    all      : to build all above
+    [blank]  : same as 'all'
+    clean    : delete binary files
+
+First Step:
+  On Unix/Linux terminal, in the directory of source files, type
+
+    make fret
+
+  to build VB-HMM-TS-FRET fostware.
+  In order to execute, type, for example,
+
+    vbHmmTsFret 2 20 5 1000 1e-10 D-data A-data
+
+  where paramters mean:
+    try NoS (number of states) from 2 to 20
+      (if maximum of lower bound is found, NoS up to +2 is analyzed)
+    repeat 5 analysis at each NoS with changing initial conditions
+    calculation continues to 1000 iteration at maximum
+      even if calculation does not converges
+    calculation ends if lower bounds gets lower than 1e-10
+      (smaller value make calculation converges well
+       but takes longer time)
+    D-data : file name for donor time stamp data
+    A-data : file name for acceptor time stamp data
+
+    data file format for VB-HMM-TS-FRET software:
+      binary file of 32bit unsigned integer
+      1st data : tick frequency
+      2nd data- : time stamp of each photon in unit of ticks
+
