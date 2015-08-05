@@ -1,0 +1,8 @@
+# files
+.DS_Store
+
+# directories
+/tmp
+
+# wild cards
+*.o
