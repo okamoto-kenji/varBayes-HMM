@@ -154,29 +154,29 @@ vbHmmCommonParameters* cParams;
     }
 
 #ifdef DEBUG
-#pragma omp critical
-{
-    FILE *logFP = stderr;
-    for( i = 0 ; i < sNo ; i++ ){
-        fprintf(logFP, "pi:%g, ", params->avgPi[i]);
-        fprintf(logFP, "lnPi:%g, ", params->avgLnPi[i]);
-        fprintf(logFP, "A(");
-        for( j = 0 ; j < sNo ; j++ ){
-            fprintf(logFP, "%g,", params->avgA[i][j]);
-        }
-        fprintf(logFP, "), ");
-        fprintf(logFP, "lnA(");
-        for( j = 0 ; j < sNo ; j++ ){
-            fprintf(logFP, "%g,", params->avgLnA[i][j]);
-        }
-        fprintf(logFP, "), ");
-        fprintf(logFP, "I:%g, ", params->avgI[i]);
-        fprintf(logFP, "lnI:%g, ", params->avgLnI[i]);
-        fprintf(logFP, "E:%g, ", params->avgE[i]);
-        fprintf(logFP, "lnE:%g  \n", params->avgLnE[i][0]);
-    }
-    fprintf(logFP, "//\n");
-}
+//#pragma omp critical
+//{
+//    FILE *logFP = stderr;
+//    for( i = 0 ; i < sNo ; i++ ){
+//        fprintf(logFP, "pi:%g, ", params->avgPi[i]);
+//        fprintf(logFP, "lnPi:%g, ", params->avgLnPi[i]);
+//        fprintf(logFP, "A(");
+//        for( j = 0 ; j < sNo ; j++ ){
+//            fprintf(logFP, "%g,", params->avgA[i][j]);
+//        }
+//        fprintf(logFP, "), ");
+//        fprintf(logFP, "lnA(");
+//        for( j = 0 ; j < sNo ; j++ ){
+//            fprintf(logFP, "%g,", params->avgLnA[i][j]);
+//        }
+//        fprintf(logFP, "), ");
+//        fprintf(logFP, "I:%g, ", params->avgI[i]);
+//        fprintf(logFP, "lnI:%g, ", params->avgLnI[i]);
+//        fprintf(logFP, "E:%g, ", params->avgE[i]);
+//        fprintf(logFP, "lnE:%g  \n", params->avgLnE[i][0]);
+//    }
+//    fprintf(logFP, "//\n");
+//}
 #endif
     
     return params;
@@ -354,26 +354,26 @@ void *params;
     }
 
 #ifdef DEBUG
-#pragma omp critical
-{
-    for( n = 0 ; n < 20 ; n++ ){
-        for( i = 0 ; i < sNo ; i++ ){
-            fprintf(logFP, "%g,", gmMat[n][i]);
-        }
-        fprintf(logFP, "; ");
-    }
-    fprintf(logFP, "\n");
-    for( i = 0 ; i < sNo ; i++ ){
-        fprintf(logFP, "Ni(%d)=%g,  ", i, Ni[i]);
-        fprintf(logFP, "Ti(%d)=%g,  ", i, Ti[i]);
-        fprintf(logFP, "Mi(%d)=%g,  ", i, Mi[i]);
-        for( j = 0 ; j < sNo ; j++ ){
-            if( j != i )
-                fprintf(logFP, "Nij(%d,%d)=%g, ", i, j, Nij[i][j]);
-        }
-        fprintf(logFP, "\n");
-    }
-}
+//#pragma omp critical
+//{
+//    for( n = 0 ; n < 20 ; n++ ){
+//        for( i = 0 ; i < sNo ; i++ ){
+//            fprintf(logFP, "%g,", gmMat[n][i]);
+//        }
+//        fprintf(logFP, "; ");
+//    }
+//    fprintf(logFP, "\n");
+//    for( i = 0 ; i < sNo ; i++ ){
+//        fprintf(logFP, "Ni(%d)=%g,  ", i, Ni[i]);
+//        fprintf(logFP, "Ti(%d)=%g,  ", i, Ti[i]);
+//        fprintf(logFP, "Mi(%d)=%g,  ", i, Mi[i]);
+//        for( j = 0 ; j < sNo ; j++ ){
+//            if( j != i )
+//                fprintf(logFP, "Nij(%d,%d)=%g, ", i, j, Nij[i][j]);
+//        }
+//        fprintf(logFP, "\n");
+//    }
+//}
 #endif
 }
 
@@ -498,14 +498,14 @@ void *params;
     val += log(gsl_sf_fact(sNo));
 
 #ifdef DEBUG
-#pragma omp critical
-{
-    FILE *logFP = stderr;
-    if( val > 100000 ){
-        fprintf(logFP, "  > %g; %g; %g; %g;", lnpPi, lnpA, lnpI, lnpE);
-        fprintf(logFP, " %g; %g; %g; %g; %g\n", lnqPi, lnqA, lnqI, lnqE, lnpX);
-    }
-}
+//#pragma omp critical
+//{
+//    FILE *logFP = stderr;
+//    if( val > 100000 ){
+//        fprintf(logFP, "  > %g; %g; %g; %g;", lnpPi, lnpA, lnpI, lnpE);
+//        fprintf(logFP, " %g; %g; %g; %g; %g\n", lnqPi, lnqA, lnqI, lnqE, lnpX);
+//    }
+//}
 #endif
 
     return val;
