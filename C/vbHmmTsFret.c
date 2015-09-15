@@ -334,30 +334,30 @@ void *params;
         Nij[i] = MAX( Nij[i], 1.0 );
     }
     
-#ifdef DEBUG
-#pragma omp critical
-{
-    for( n = 0 ; n < 20 ; n++ ){
-        for( i = 0 ; i < sNo ; i++ ){
-            fprintf(logFP, "%g,", gmMat[n][i]);
-        }
-        fprintf(logFP, "; ");
-    }
-    fprintf(logFP, "\n");
-    for( i = 0 ; i < sNo ; i++ ){
-        fprintf(logFP, "Ni(%d)=%g,  ", i, Ni[i]);
-        fprintf(logFP, "Ti(%d)=%g,  ", i, Ti[i]);
-        fprintf(logFP, "eps(%d)=%g,  ", i, eps[i]);
-        fprintf(logFP, "Nii(%d)=%g,  ", i, Nii[i]);
-        fprintf(logFP, "Nij(%d)=%g,  ", i, Nij[i]);
-        for( j = 0 ; j < sNo ; j++ ){
-            if( j != i )
-                fprintf(logFP, "N'ij(%d,%d)=%g, ", i, j, Mij[i][j]);
-        }
-        fprintf(logFP, "\n");
-    }
-}
-#endif
+//#ifdef DEBUG
+//#pragma omp critical
+//{
+//    for( n = 0 ; n < 20 ; n++ ){
+//        for( i = 0 ; i < sNo ; i++ ){
+//            fprintf(logFP, "%g,", gmMat[n][i]);
+//        }
+//        fprintf(logFP, "; ");
+//    }
+//    fprintf(logFP, "\n");
+//    for( i = 0 ; i < sNo ; i++ ){
+//        fprintf(logFP, "Ni(%d)=%g,  ", i, Ni[i]);
+//        fprintf(logFP, "Ti(%d)=%g,  ", i, Ti[i]);
+//        fprintf(logFP, "eps(%d)=%g,  ", i, eps[i]);
+//        fprintf(logFP, "Nii(%d)=%g,  ", i, Nii[i]);
+//        fprintf(logFP, "Nij(%d)=%g,  ", i, Nij[i]);
+//        for( j = 0 ; j < sNo ; j++ ){
+//            if( j != i )
+//                fprintf(logFP, "N'ij(%d,%d)=%g, ", i, j, Mij[i][j]);
+//        }
+//        fprintf(logFP, "\n");
+//    }
+//}
+//#endif
 }
 
 
@@ -497,17 +497,17 @@ void *params;
     val -= lnqPi + lnqKiiI + lnqKij + lnqE;
     val += lnpX;
 
-#ifdef DEBUG
-#pragma omp critical
-{
-    FILE *logFP = stderr;
-    if( val > 100000 ){
-        fprintf(logFP, "  > %g; %g; %g; %g; %g;", lnpPi, lnpKii, lnpKij, lnpI, lnpE);
-        fprintf(logFP, " %g; %g; %g; %g; %g\n", lnqPi, lnqKiiI, lnqKij, lnqE, lnpX);
-    }
-}
-#endif
-            
+//#ifdef DEBUG
+//#pragma omp critical
+//{
+//    FILE *logFP = stderr;
+//    if( val > 100000 ){
+//        fprintf(logFP, "  > %g; %g; %g; %g; %g;", lnpPi, lnpKii, lnpKij, lnpI, lnpE);
+//        fprintf(logFP, " %g; %g; %g; %g; %g\n", lnqPi, lnqKiiI, lnqKij, lnqE, lnpX);
+//    }
+//}
+//#endif
+    
     return val;
 }    
 

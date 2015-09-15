@@ -120,7 +120,7 @@ FILE *logFP;
     char fn[256];
     FILE *fp = NULL;
     strncpy( fn, out_name, sizeof(fn) );
-    strncat( fn, ".LqVsK", sizeof(fn) );
+    strncat( fn, ".LqVsK", sizeof(fn) - strlen(fn) - 1 );
     if( (fp = fopen( fn, "w" )) != NULL ){
         for( s = 0 ; s < trials * (sTo - sFrom + 1) ; s++ ){
             fprintf( fp, "%2d, %.20g\n", (s/trials) + sFrom, LqVsK[s] );
@@ -316,13 +316,13 @@ void *params;
     // forward
     cn[0] = 0.0;
     for( i = 0 ; i < sNo ; i++ ){
-        valpXnZn[0][i] = (*pTilde_xn_zn)( xnWv, 0, i, params );
-        aMat[0][i] = (*pTilde_z1)( i, params ) * valpXnZn[0][i];
+        valpXnZn[0][i] = (*pTilde_xn_zn)( xnWv, 0, (int)i, params );
+        aMat[0][i] = (*pTilde_z1)( (int)i, params ) * valpXnZn[0][i];
 
         cn[0] += aMat[0][i];
 
         for( j = 0 ; j < sNo ; j++ ){
-            valpZnZn1[i][j] = (*pTilde_zn_zn1)( i, j, params );
+            valpZnZn1[i][j] = (*pTilde_zn_zn1)( (int)i, (int)j, params );
         }
     }
     for( i = 0 ; i < sNo ; i++ ){
@@ -335,7 +335,7 @@ void *params;
             for( i = 0 ; i < sNo ; i++ ){
                 aMat[n][j] += aMat[n-1][i] * valpZnZn1[i][j];
             }
-            valpXnZn[n][j] = (*pTilde_xn_zn)( xnWv, n, j, params );
+            valpXnZn[n][j] = (*pTilde_xn_zn)( xnWv, n, (int)j, params );
             aMat[n][j] *= valpXnZn[n][j];
             cn[n] += aMat[n][j];
         }

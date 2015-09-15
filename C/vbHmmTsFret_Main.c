@@ -29,8 +29,8 @@ int main( int argc, char *argv[] ){
     time_t  startTime = time((time_t *)NULL);
     initRan();
 
-    int sFrom, sTo, trials, maxIteration;
-    double threshold;
+    int sFrom = 0, sTo = 0, trials = 0, maxIteration = 0;
+    double threshold = 0.0;
 
     // Get command line arguments.
     if( argc != 8 ){
@@ -79,7 +79,7 @@ int main( int argc, char *argv[] ){
         }
         
         strncpy( logFilename, out_name, sizeof(logFilename) );
-        strncat( logFilename, ".log", sizeof(logFilename) );
+        strncat( logFilename, ".log", sizeof(logFilename) - strlen(logFilename) - 1 );
         logFP = fopen( logFilename, "w" );
     }
 

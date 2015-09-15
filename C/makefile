@@ -12,6 +12,9 @@ pcObjs = vbHmmPc_Main.o vbHmm_Common.o vbHmmPc.o vbHmmPcDataHandler.o rand.o
 pcFretProg = vbHmmPcFret
 pcFretObjs = vbHmmPcFret_Main.o vbHmm_Common.o vbHmmPcFret.o vbHmmPcFretDataHandler.o rand.o
 
+gaussProg = vbHmmGauss
+gaussObjs = vbHmmGauss_Main.o vbHmm_Common.o vbHmmGauss.o vbHmmGaussDataHandler.o rand.o
+
 tempProg = vbHmm_template
 tempObjs = vbHmm_template_Main.o vbHmm_Common.o vbHmm_template.o vbHmm_Template_DataHandler.o rand.o
 
@@ -54,6 +57,10 @@ pcFret : $(pcFretProg)
 $(pcFretProg) : $(pcFretObjs)
 	$(CC) $^ $(LDFLAGS) -o $(pcFretProg)
 
+gauss : $(gaussProg)
+$(gaussProg) : $(gaussObjs)
+$(CC) $^ $(LDFLAGS) -o $(gaussProg)
+
 template : $(tempProg)
 $(tempProg) : $(tempObjs)
 	$(CC) $^ $(LDFLAGS) -o $(tempProg)
@@ -63,7 +70,7 @@ $(tempProg) : $(tempObjs)
 
 .PHONY: clean
 clean:
-	$(RM) $(tsProg) $(tsObjs) $(tsFretProg) $(tsFretObjs) $(pcProg) $(pcObjs) $(pcFretProg) $(pcFretObjs) $(tempProg) $(tempObjs)
+	$(RM) $(tsProg) $(tsObjs) $(tsFretProg) $(tsFretObjs) $(pcProg) $(pcObjs) $(pcFretProg) $(pcFretObjs) $(gaussProg) $(gaussObjs) $(tempProg) $(tempObjs)
 
 vbHmm_Common.o : vbHmm_Common.h
 rand.o : rand.h
@@ -83,6 +90,10 @@ vbHmmPcDataHandler.o : vbHmm_Common.h vbHmmPc.h vbHmmPcDataHandler.h
 vbHmmPcFret.o            : vbHmm_Common.h vbHmmPcFret.h rand.h
 vbHmmPcFret_Main.o       : vbHmm_Common.h vbHmmPcFret.h vbHmmPcFretDataHandler.h vbHmmPcFret_Main.h
 vbHmmPcFretDataHandler.o : vbHmm_Common.h vbHmmPcFret.h vbHmmPcFretDataHandler.h
+
+vbHmmGauss.o            : vbHmm_Common.h vbHmmGauss.h rand.h
+vbHmmGauss_Main.o       : vbHmm_Common.h vbHmmGauss.h vbHmmGaussDataHandler.h vbHmmGauss_Main.h
+vbHmmGaussDataHandler.o : vbHmm_Common.h vbHmmGauss.h vbHmmGaussDataHandler.h
 
 vbHmm_template.o             : vbHmm_Common.h vbHmm_template.h rand.h
 vbHmm_template_Main.o        : vbHmm_Common.h vbHmm_template.h vbHmm_Template_DataHandler.h vbHmm_template_Main.h
