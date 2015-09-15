@@ -153,7 +153,7 @@ vbHmmCommonParameters* cParams;
         params->avgLnE[i][0] = log( 1.0 - params->avgE[i] );
     }
 
-#ifdef DEBUG
+//#ifdef DEBUG
 //#pragma omp critical
 //{
 //    FILE *logFP = stderr;
@@ -177,7 +177,7 @@ vbHmmCommonParameters* cParams;
 //    }
 //    fprintf(logFP, "//\n");
 //}
-#endif
+//#endif
     
     return params;
 }
@@ -353,7 +353,7 @@ void *params;
         Ci[i] = Di[i] + Ai[i];
     }
 
-#ifdef DEBUG
+//#ifdef DEBUG
 //#pragma omp critical
 //{
 //    for( n = 0 ; n < 20 ; n++ ){
@@ -374,7 +374,7 @@ void *params;
 //        fprintf(logFP, "\n");
 //    }
 //}
-#endif
+//#endif
 }
 
 
@@ -497,7 +497,7 @@ void *params;
     val += lnpX;
     val += log(gsl_sf_fact(sNo));
 
-#ifdef DEBUG
+//#ifdef DEBUG
 //#pragma omp critical
 //{
 //    FILE *logFP = stderr;
@@ -506,7 +506,7 @@ void *params;
 //        fprintf(logFP, " %g; %g; %g; %g; %g\n", lnqPi, lnqA, lnqI, lnqE, lnpX);
 //    }
 //}
-#endif
+//#endif
 
     return val;
 }    
