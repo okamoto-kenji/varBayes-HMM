@@ -1,7 +1,7 @@
 Variational Bayes-Hidden Markov model (VB-HMM) analysis programs:
 
 Kenji Okamoto and Yasushi Sako, RIKEN
-revised: 2014.07.31
+revised: 2015.09.15
 
 System Requirements:
   VB-HMM softwares can be built on darwin or linux operating system.
@@ -19,6 +19,7 @@ Build:
     fret     : to build VB-HMM-TS-FRET (vbHmmTsFret)
     pc       : to build VB-HMM-PC (vbHmmPc)
     pcFret   : to build VB-HMM-PC-FRET (vbHmmPcFret)
+    gauss   : to build VB-HMM-Gauss (vbHmmGauss)
     template : to build template VB-HMM (vbHmm_template)
     all      : to build all above
     [blank]  : same as 'all'
