@@ -59,7 +59,7 @@ $(pcFretProg) : $(pcFretObjs)
 
 gauss : $(gaussProg)
 $(gaussProg) : $(gaussObjs)
-$(CC) $^ $(LDFLAGS) -o $(gaussProg)
+	$(CC) $^ $(LDFLAGS) -o $(gaussProg)
 
 template : $(tempProg)
 $(tempProg) : $(tempObjs)

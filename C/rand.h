@@ -2,13 +2,13 @@
  *  rand.h
  *  Random number generation
  *
- *  Created by OKAMOTO Kenji and SAKO Yasushi
- *  Copyright 2011
+ *  Created by OKAMOTO Kenji, SAKO Yasushi and RIKEN
+ *  Copyright 2011-2015
  *  Cellular Informatics Laboratory, Advance Science Institute, RIKEN, Japan.
  *  All rights reserved.
  *
  *  Ver. 1.0.0
- *  Last modified on 2011.04.19
+ *  Last modified on 2015.09.17
  */
 
 #ifndef DEF_RAND

@@ -2,13 +2,13 @@
  *  vbHmmTsFret.c
  *  Model-specific core functions for VB-HMM-TS.
  *
- *  Created by OKAMOTO Kenji and SAKO Yasushi
- *  Copyright 2011
+ *  Created by OKAMOTO Kenji, SAKO Yasushi and RIKEN
+ *  Copyright 2011-2015
  *  Cellular Informatics Laboratory, Advance Science Institute, RIKEN, Japan.
  *  All rights reserved.
  *
- *  Ver. 1.0.0
- *  Last modified on 2011.04.19
+ *  Ver. 1.1.0
+ *  Last modified on 2015.09.17
  */
 
 #include "vbHmmTsFret.h"
@@ -19,8 +19,6 @@
 #ifdef _OPENMP
 #include "omp.h"
 #endif
-
-//#define  DEBUG
 
 //// Uncomment one/both of the following defenitions to activate constraint on I or/and K.
 //#define  INTENSITY_CAP
@@ -333,31 +331,6 @@ void *params;
         Nii[i] = MAX( Nii[i], 1.0 );
         Nij[i] = MAX( Nij[i], 1.0 );
     }
-    
-//#ifdef DEBUG
-//#pragma omp critical
-//{
-//    for( n = 0 ; n < 20 ; n++ ){
-//        for( i = 0 ; i < sNo ; i++ ){
-//            fprintf(logFP, "%g,", gmMat[n][i]);
-//        }
-//        fprintf(logFP, "; ");
-//    }
-//    fprintf(logFP, "\n");
-//    for( i = 0 ; i < sNo ; i++ ){
-//        fprintf(logFP, "Ni(%d)=%g,  ", i, Ni[i]);
-//        fprintf(logFP, "Ti(%d)=%g,  ", i, Ti[i]);
-//        fprintf(logFP, "eps(%d)=%g,  ", i, eps[i]);
-//        fprintf(logFP, "Nii(%d)=%g,  ", i, Nii[i]);
-//        fprintf(logFP, "Nij(%d)=%g,  ", i, Nij[i]);
-//        for( j = 0 ; j < sNo ; j++ ){
-//            if( j != i )
-//                fprintf(logFP, "N'ij(%d,%d)=%g, ", i, j, Mij[i][j]);
-//        }
-//        fprintf(logFP, "\n");
-//    }
-//}
-//#endif
 }
 
 
@@ -496,17 +469,6 @@ void *params;
     val  = lnpPi + lnpKii + lnpKij + lnpI + lnpE;
     val -= lnqPi + lnqKiiI + lnqKij + lnqE;
     val += lnpX;
-
-//#ifdef DEBUG
-//#pragma omp critical
-//{
-//    FILE *logFP = stderr;
-//    if( val > 100000 ){
-//        fprintf(logFP, "  > %g; %g; %g; %g; %g;", lnpPi, lnpKii, lnpKij, lnpI, lnpE);
-//        fprintf(logFP, " %g; %g; %g; %g; %g\n", lnqPi, lnqKiiI, lnqKij, lnqE, lnpX);
-//    }
-//}
-//#endif
     
     return val;
 }    

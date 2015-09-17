@@ -1,14 +1,14 @@
 /*
  *  vbHmmGauss.h
- *  Model-specific core functions for VB-HMM-PC-FRET.
+ *  Model-specific core functions for VB-HMM-GAUSS.
  *
- *  Created by OKAMOTO Kenji and SAKO Yasushi
- *  Copyright 2011
+ *  Created by OKAMOTO Kenji, SAKO Yasushi and RIKEN
+ *  Copyright 2011-2015
  *  Cellular Informatics Laboratory, Advance Science Institute, RIKEN, Japan.
  *  All rights reserved.
  *
  *  Ver. 1.0.0
- *  Last modified on 2015.09.xx
+ *  Last modified on 2015.09.17
  */
 
 #ifndef VBHMMGAUSS_DEF
@@ -18,39 +18,20 @@
 
 // model-specific data
 typedef struct _gaussData {
-//    double binSize;
     double *v;       // value
-//    unsigned int *dCounts;
-//    unsigned int *aCounts;
 } gaussData;
 
 // model-specific parameters
 typedef struct gaussParameters_ {
     int sNo;
-//    double binSize;
     double *uPiArr, sumUPi;
-//    double *aIArr, *bIArr;
     double **uAMat, *sumUAArr;
-//    double *uEArr, *vEArr;
     double *avgPi, *avgLnPi;
     double **avgA, **avgLnA;
     double *avgMu, *avgLm, *avgLnLm;
     double *uBtArr, *uMuArr, *uAArr, *uBArr;
     double *btMu, *aLm, *bLm, *mu0;
-//    double *avgI, *avgLnI;
-//    double *avgE, **avgLnE;
     double **Nij, *Nii, *Ni, *barX, *NiSi;
-//    double *Ci, *Di, *Ai, *Mi, **Nij;
-
-//    int sNo;
-//    double binSize;
-//    double *uPiArr, sumUPi;
-//    double *aIArr, *bIArr;
-//    double **uAMat, *sumUAArr;
-//    double *uEArr, *vEArr;
-//    double *avgPi, *avgLnPi, **avgA, **avgLnA, *avgI, *avgLnI;
-//    double *avgE, **avgLnE;
-//    double *Ni, *Ci, *Di, *Ai, *Mi, **Nij;
 } gaussParameters;
 gaussParameters *blankParameters_gauss( int );
 void freeGaussDataSet( xnDataSet* );

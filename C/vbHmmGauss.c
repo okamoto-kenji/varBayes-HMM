@@ -1,14 +1,14 @@
 /*
  *  vbHmmGauss.c
- *  Model-specific core functions for VB-HMM-PC-FRET.
+ *  Model-specific core functions for VB-HMM-GAUSS.
  *
- *  Created by OKAMOTO Kenji and SAKO Yasushi
- *  Copyright 2011
+ *  Created by OKAMOTO Kenji, SAKO Yasushi and RIKEN
+ *  Copyright 2011-2015
  *  Cellular Informatics Laboratory, Advance Science Institute, RIKEN, Japan.
  *  All rights reserved.
  *
  *  Ver. 1.0.0
- *  Last modified on 2015.09.xx
+ *  Last modified on 2015.09.17
  */
 
 #include "vbHmmGauss.h"
@@ -19,8 +19,6 @@
 #ifdef _OPENMP
 #include "omp.h"
 #endif
-
-//#define  DEBUG
 
 #define  MAX(a,b)  ((a)>(b)?(a):(b))
 #define  MIN(a,b)  ((a)<(b)?(a):(b))
@@ -73,13 +71,13 @@ vbHmmCommonParameters* cParams;
 
     int i, j;
     size_t n;
-    double totalX = 0.0, precX, varX;
+    double totalX = 0.0, precX, varX = 0.0;
     for( i = 0 ; i < xnWv->N ; i++ ){
         totalX += xn->v[i];
     }
     double meanX = totalX / (double)xnWv->N;
     for( i = 0 ; i < xnWv->N ; i++ ){
-        varX += pow( xn->v[i] - meanX, 2.0);
+        varX += pow(xn->v[i] - meanX, 2.0);
     }
     varX /= (double)(xnWv->N - 1);
     precX = 1.0 / varX;
@@ -112,16 +110,7 @@ vbHmmCommonParameters* cParams;
         p->uBArr[i] = 0.01;
     }
     
-    double sumPar = 0.0;
-//    for( i = 0 ; i < sNo ; i++ ){
-//        p->avgPi[i] = 1.0/(double)sNo + enoise(0.1/(double)sNo);
-//        sumPar += p->avgPi[i];
-//    }
-//    for( i = 0 ; i < sNo ; i++ ){
-//        p->avgPi[i] /= sumPar;
-//        p->avgLnPi[i] = log( p->avgPi[i] );
-//    }
-
+    double sumPar;
     for( n = 0 ; n < xnWv->N ; n++ ){
         sumPar = 0.0;
         for( i = 0 ; i < sNo ; i++ ){
@@ -135,32 +124,6 @@ vbHmmCommonParameters* cParams;
     calcStatsVars_gauss( xnWv, cParams, p );
     maximization_gauss( xnWv, cParams, p );
 
-//#ifdef DEBUG
-//#pragma omp critical
-//{
-//    FILE *logFP = stderr;
-//    for( i = 0 ; i < sNo ; i++ ){
-//        fprintf(logFP, "pi:%g, ", params->avgPi[i]);
-//        fprintf(logFP, "lnPi:%g, ", params->avgLnPi[i]);
-//        fprintf(logFP, "A(");
-//        for( j = 0 ; j < sNo ; j++ ){
-//            fprintf(logFP, "%g,", params->avgA[i][j]);
-//        }
-//        fprintf(logFP, "), ");
-//        fprintf(logFP, "lnA(");
-//        for( j = 0 ; j < sNo ; j++ ){
-//            fprintf(logFP, "%g,", params->avgLnA[i][j]);
-//        }
-//        fprintf(logFP, "), ");
-//        fprintf(logFP, "I:%g, ", params->avgI[i]);
-//        fprintf(logFP, "lnI:%g, ", params->avgLnI[i]);
-//        fprintf(logFP, "E:%g, ", params->avgE[i]);
-//        fprintf(logFP, "lnE:%g  \n", params->avgLnE[i][0]);
-//    }
-//    fprintf(logFP, "//\n");
-//}
-//#endif
-    
     return p;
 }
 
@@ -294,10 +257,9 @@ void *params;
     gaussParameters *p = (gaussParameters*)params;
     gaussData *xn = (gaussData*)xnWv->data;
     double val;
-    val  = p->avgLnLm[i] - log(M_2_PI);  // ???
+    val  = p->avgLnLm[i] - log(2.0 * M_PI);
     val -= 1.0/p->btMu[i] + p->aLm[i] / p->bLm[i] * pow( xn->v[n] - p->mu0[i], 2.0);
     return exp(val / 2.0);
-//    return exp( xn->dCounts[n]*p->avgLnE[i][0] + xn->aCounts[n]*p->avgLnE[i][1] + (xn->dCounts[n]+xn->aCounts[n])*p->avgLnI[i] - p->avgI[i] ) / gsl_sf_fact( xn->dCounts[n] ) / gsl_sf_fact( xn->aCounts[n] );
 }
 
 
@@ -338,26 +300,6 @@ void *params;
             NiSi[i] += gmMat[n][i] * pow( xn->v[n] - barX[i], 2.0);
         }
     }
-
-//#ifdef DEBUG
-//    for( n = 0 ; n < 20 ; n++ ){
-//        for( i = 0 ; i < sNo ; i++ ){
-//            fprintf(logFP, "%g,", gmMat[n][i]);
-//        }
-//        fprintf(logFP, "; ");
-//    }
-//    fprintf(logFP, "\n");
-//    for( i = 0 ; i < sNo ; i++ ){
-//        fprintf(logFP, "Ni(%d)=%g,  ", i, Ni[i]);
-//        fprintf(logFP, "Ti(%d)=%g,  ", i, Ti[i]);
-//        fprintf(logFP, "Mi(%d)=%g,  ", i, Mi[i]);
-//        for( j = 0 ; j < sNo ; j++ ){
-//            if( j != i )
-//                fprintf(logFP, "Nij(%d,%d)=%g, ", i, j, Nij[i][j]);
-//        }
-//        fprintf(logFP, "\n");
-//    }
-//#endif
 }
 
 
@@ -369,13 +311,10 @@ void *params;
     gaussParameters *p = (gaussParameters*)params;
     int sNo = cParams->sNo;
     double **gmMat = cParams->gmMat;
-    double *uPiArr = p->uPiArr, sumUPi = p->sumUPi; //, *aIArr = p->aIArr, *bIArr = p->bIArr;
+    double *uPiArr = p->uPiArr, sumUPi = p->sumUPi;
     double **uAMat = p->uAMat, *sumUAArr = p->sumUAArr;
     double *uBtArr = p->uBtArr, *uMuArr = p->uMuArr, *uAArr = p->uAArr, *uBArr = p->uBArr;
-//    double *uEArr = p->uEArr, *vEArr = p->vEArr;
     double *avgPi = p->avgPi, *avgLnPi = p->avgLnPi, **avgA = p->avgA, **avgLnA = p->avgLnA;
-//    double *avgE = p->avgE, **avgLnE = p->avgLnE;
-//    double *avgI = p->avgI, *avgLnI = p->avgLnI;
     double *avgMu = p->avgMu, *avgLm = p->avgLm, *avgLnLm = p->avgLnLm;
     double *Ni = p->Ni, *Nii = p->Nii, **Nij = p->Nij, *barX = p->barX, *NiSi = p->NiSi;
     double *mu0 = p->mu0, *btMu = p->btMu, *aLm = p->aLm, *bLm = p->bLm;
@@ -462,17 +401,6 @@ void *params;
     val -= lnqPi + lnqA + lnqMuLm;
     val += lnpX;
     val += log(gsl_sf_fact(sNo));
-
-//#ifdef DEBUG
-//#pragma omp critical
-//{
-//    FILE *logFP = stderr;
-//    if( val > 100000 ){
-//        fprintf(logFP, "  > %g; %g; %g; %g;", lnpPi, lnpA, lnpI, lnpE);
-//        fprintf(logFP, " %g; %g; %g; %g; %g\n", lnqPi, lnqA, lnqI, lnqE, lnpX);
-//    }
-//}
-//#endif
 
     return val;
 }    

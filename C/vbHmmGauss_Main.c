@@ -1,14 +1,14 @@
 /*
  *  vbHmmGauss_Main.c
- *  Model-specific main function for VB-HMM-PC-FRET.
+ *  Model-specific main function for VB-HMM-GAUSS.
  *
- *  Created by OKAMOTO Kenji and SAKO Yasushi
- *  Copyright 2011
+ *  Created by OKAMOTO Kenji, SAKO Yasushi and RIKEN
+ *  Copyright 2011-2015
  *  Cellular Informatics Laboratory, Advance Science Institute, RIKEN, Japan.
  *  All rights reserved.
  *
  *  Ver. 1.0.0
- *  Last modified on 2015.09.xx
+ *  Last modified on 2015.09.17
  */
 
 #include "vbHmmGauss_Main.h"
@@ -58,10 +58,9 @@ int main( int argc, char *argv[] ){
         maxIteration = atoi( argv[4] );
         threshold = atof( argv[5] );
 
-        // Set the output filename
-        // assumes two files, for donor and acceptor signals, respectively, begin with
-        // the same strings and different suffxes.
         strncpy( in_name, argv[6], sizeof(in_name) );
+        strncpy( out_name, argv[6], sizeof(out_name) );
+
         strncpy( logFilename, out_name, sizeof(logFilename) );
         strncat( logFilename, ".log", sizeof(logFilename) - strlen(logFilename) - 1 );
         logFP = fopen( logFilename, "w" );
