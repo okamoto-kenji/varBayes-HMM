@@ -1,0 +1,39 @@
+Variational Bayes-Hidden Markov model (VB-HMM) analysis programs:
+Python version.
+
+Kenji Okamoto and Yasushi Sako, RIKEN
+revised: 2015.09.27
+
+System Requirements:
+  Python Ver. 3
+
+  The following Libraries must be installed:
+    NumPy
+    SciPy
+
+Available Model:
+  Gaussian model
+
+Execution:
+  In order to execute, type, for example,
+
+    python vbHmmGauss.py 2 20 5 1000 1e-10 datafile
+
+  where paramters mean:
+    try NoS (number of states) from 2 to 20
+      (if maximum of lower bound is found, NoS up to +2 is analyzed)
+    repeat 5 analysis at each NoS with changing initial conditions
+    calculation continues to 1000 iteration at maximum
+      even if calculation does not converges
+    calculation ends if lower bounds gets lower than 1e-10
+      (smaller value make calculation converges well
+       but takes longer time)
+    datafile : file name for data
+
+    data file format for VB-HMM-TS-FRET software:
+      text file containing a value per line.
+
+Known Problems:
+• Just translated from C version.  Not optimized for Python.
+• Results differs from C version.
+• Much slower (> 100 times) then C version.

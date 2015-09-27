@@ -426,7 +426,7 @@ void *params;
     for( i = 0 ; i < sNo ; i++ )
     {   s2D[i] = (double*)malloc( MAX(sNo,2) * sizeof(double) );   }
 
-    // index indicates order of avgE values (0=biggest avgE -- sNo=smallest avgE).
+    // index indicates order of avgMu values (0=biggest avgMu -- sNo=smallest avgMu).
     for( i = 0 ; i < sNo ; i++ ){
         index[i] = sNo - 1;
         for( j = 0 ; j < sNo ; j++ ){
