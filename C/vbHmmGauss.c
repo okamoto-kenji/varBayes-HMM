@@ -331,7 +331,7 @@ void *params;
 
         btMu[i] = uBtArr[i] + Ni[i];
         mu0[i]  = (uBtArr[i] * uMuArr[i] + Ni[i] * barX[i]) / btMu[i];
-        aLm[i]  = uAArr[i] + (Ni[i] + 1.0) / 2.0;
+        aLm[i]  = uAArr[i] + Ni[i] / 2.0;
         bLm[i]  = uBArr[i] + (NiSi[i] / 2.0);
         bLm[i] += uBtArr[i] * Ni[i] * pow( barX[i] - uMuArr[i], 2.0) / 2.0 / (uBtArr[i] + Ni[i]);
         

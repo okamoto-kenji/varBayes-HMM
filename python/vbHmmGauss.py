@@ -152,7 +152,7 @@ class vbHmm_Gauss:
 
             self.p.btMu[i] = self.p.uBtArr[i] + self.p.Ni[i]
             self.p.mu0[i]  = (self.p.uBtArr[i] * self.p.uMuArr[i] + self.p.Ni[i] * self.p.barX[i]) / self.p.btMu[i]
-            self.p.aLm[i]  = self.p.uAArr[i] + (self.p.Ni[i] + 1.0) / 2.0
+            self.p.aLm[i]  = self.p.uAArr[i] + self.p.Ni[i] / 2.0
             self.p.bLm[i]  = self.p.uBArr[i] + (self.p.NiSi[i] / 2.0)
             self.p.bLm[i] += self.p.uBtArr[i] * self.p.Ni[i] * (self.p.barX[i] - self.p.uMuArr[i])**2.0 / 2.0 / (self.p.uBtArr[i] + self.p.Ni[i])
 
