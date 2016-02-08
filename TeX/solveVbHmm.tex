@@ -1,0 +1,242 @@
+%!TEX root = derivation.tex
+
+\section{Solution of Variational Bayes-Hidden Markov Model}
+\label{sec:varBayesHmm}
+
+\subsection{ E-step }
+
+最尤法の場合と同様に、forward-backward アルゴリズムにより、$\gamma$, $\xi$ 分布を得ることが目的。
+
+\
+
+一般的な HMM で用いられる forward-backward アルゴリズムとは、要するに、${\bf Z}$ 分布を規定する同時分布 $p( {\bf X}, {\bf Z} | \theta )$ から$\gamma, \xi$ 分布を得る計算法である。
+
+変分ベイズでは、${\bf Z}$ 分布は $q({\bf Z})$ 関数によって与えられるので、(平均場近似のためパラメータで期待値をとった後の) $q({\bf Z})$ 関数に対して forward-backward アルゴリズムを適用する。
+
+\
+
+$q^*({\bf Z})$ を計算すると、
+\begin{align}
+  \ln q^*( {\bf Z} ) =&  \mathbb{E}_{\pi}\left[ \sum_i^K z_{1i} \ln \pi_i \right] + \mathbb{E}_{A}\Biggl[ \sum_{n=2}^N \sum_i^K \sum_j^K z_{n-1, i} z_{nj} \ln A_{ij} \Biggr]  \notag  \\
+  &  + \mathbb{E}_{\theta}\Biggl[ \sum_{m=1}^N \ln p( x_m | {\bf z}_m, \theta, K ) \Biggr] + {\rm const.}  \\
+%
+  =& \sum_i^K z_{1i} \overline{\ln \pi_i} 
+      + \sum_{n=2}^N \sum_i^K \sum_j^K z_{n-1, i} z_{nj} \overline{\ln A_{ij}}  \notag  \\ 
+    &  + \sum_{m=1}^N \overline{ \ln p( x_m | {\bf z}_m, \theta, K ) } + {\rm const.}
+\intertext{ したがって、 }
+  q^*( {\bf Z} ) \propto& \prod_i^K \exp(\overline{\ln \pi_i})^{z_{1i}}  
+      \times \prod_{n=2}^N \prod_i^K \prod_{j}^K \exp\bigl( \overline{\ln A_{ij}} \bigr)^{ z_{n-1, i} z_{nj} }  \notag  \\  
+    &  \times \prod_{m=1}^N \exp\left( \overline{ \ln p( x_m | {\bf z}_m, \theta, K ) } \right)  
+\end{align}
+となる。
+そこで、
+\begin{align}
+  \tilde{p}( {\bf z}_1 | \theta, K )  =&  \prod_i^K \exp(\overline{\ln \pi_i})^{z_{1i}}  \label{eqn:pTildeZ1}  \\
+  \tilde{p}( {\bf z}_n | {\bf z}_{n-1}, \theta, K )  =&  \prod_i^K \prod_j^K \exp\bigl( \overline{\ln A_{ij}} \bigr)^{ z_{n-1, i} z_{nj} }  \label{eqn:pTildeZnZn1}  \\
+  \tilde{p}( x_m | {\bf z}_m, \theta, K )  =&  \exp\left( \overline{ \ln p( x_m | {\bf z}_m, \theta, K ) } \right)  \label{eqn:pTildeXnZn}  
+\end{align}
+をそれぞれ $p( {\bf z}_1, \theta, K )$, $p( {\bf z}_n | {\bf z}_{n-1}, \theta, K )$, $p( x_m | {\bf z}_m, \theta, K )$ の代わりに用いて forward-backward アルゴリズムを実行し、$\gamma, \xi$ 分布を得る。
+
+\
+
+各パラメータには期待値 ($\overline{\ln \pi_i}$, $\overline{\ln A_{ij}}$ 等) を与えなければならないが、計算の１ステップ目では、乱数等で適当に与えればよい。
+反復計算中は、直前の M-step で得られた値を用いる。
+
+
+\subsection{ M-step }
+
+各パラメータについて分布関数 $q$ を更新し、期待値を求める。
+
+${\bf X}, {\bf Z}, \theta$ の同時分布は、
+\begin{align}
+  p( {\bf X}, {\bf Z}, \theta | K )  =&  p( \theta | K ) \times p( {\bf X}, {\bf Z} | \theta, K )  \\
+%
+  =&  p( \theta | K ) \times p( {\bf z}_1 | \theta, K ) 
+      \times \prod_{n=2}^N p( {\bf z}_n | {\bf z}_{n-1}, \theta, K )  \notag  \\
+    &  \times \prod_{m=1}^N p( x_m | {\bf z}_m, \theta, K )  \label{eqn:vbHmmJointProb}
+\intertext{ と書けるので、${\bf Z}$ を固定する平均場近似を用いて }
+  \ln q^*( \theta )  =&  \mathbb{E}_{\bf Z} \biggl[ \ln p( \theta ) + \ln p( {\bf z}_1 ) + \sum_{n=2}^N \ln p( {\bf z}_n | {\bf z}_{n-1} )  \notag  \\  
+  &  + \sum_{m=1}^N \ln p( x_m | {\bf z}_m ) \biggr]  
+\end{align}
+により $q^*$ を得る。
+
+\
+
+パラメータ ${\boldsymbol \pi}$, ${\bf A}$, $\phi$ がそれぞれ独立、かつ、$p( x_m | {\bf z}_m, \theta, K )$ は ${\boldsymbol \pi}$, ${\bf A}$ に依存しないとすると、まず ${\boldsymbol \pi}$ に関して、
+\begin{align}
+  \ln q^*( {\boldsymbol \pi} )  =&  \ln p( {\boldsymbol \pi} ) + \mathbb{E}_{\bf Z} \left[ \ln p( {\bf z}_1 ) \right] + {\rm const.}  \\
+  =&  \ln p( {\boldsymbol \pi} ) + \mathbb{E}_{\bf Z} \left[ \sum_i^K z_{1i} \ln \pi_i \right] + {\rm const.}  \\
+  =&  \ln p( {\boldsymbol \pi} ) + \sum_i^K \overline{z_{1i}} \cdot \ln \pi_i + {\rm const.}  
+\intertext{ となり、 }
+  q^*( {\boldsymbol \pi} )  &\propto  p( {\boldsymbol \pi} ) \times \prod_i^K {\pi_i}^{\overline{z_{1i}}}  
+\intertext{ ここで、事前分布として Dirichlet 分布 $p( {\boldsymbol \pi} ) \propto \prod_i^K {\pi_i}^{(u_i^\pi - 1)}$ を与えて規格化して、 }
+  q^*( {\boldsymbol \pi} )  =&  \frac{ \Gamma\left( u_0^\pi + 1 \right) }{\displaystyle  \prod_i^K \Gamma\left( u_i^\pi + \overline{z_{1i}} \right) }\prod_i^K {\pi_i}^{(u_i^\pi + \overline{z_{1i}} - 1)}  \label{eqn:qPi}  
+\end{align}
+ただし、$u_i^\pi$ は Dirichlet 分布のハイパーパラメータ。
+特に理由が無ければ、$u_i^\pi = 1$ としておけばよい。
+
+Dirichlet 分布の性質から、期待値
+\begin{align}
+  \overline{\pi_i}  =&  \frac{ u_i^\pi + \overline{z_{1i}} }{ u_0^\pi + 1 }  \label{eqn:avgPi}  \\
+  \overline{\ln \pi_i}  =&  \psi \left( u_i^\pi + \overline{z_{1i}} \right) - \psi\left( u_0^\pi + 1 \right)  \label{eqn:avgLnPi}  
+\end{align}
+を得る。
+ただし、$u_0^\pi = \sum_i^K u_i^\pi$、$\psi(x) = \frac{d}{dx} \ln \Gamma(x) = \frac{ \Gamma'(x) }{ \Gamma(x) }$ は digamma 関数。
+
+
+次に ${\bf A}$ に関して、
+\begin{align}
+  \ln q^*( {\bf A} )  =&  \ln p( {\bf A} ) + \mathbb{E}_{\bf Z} \left[ \sum_{n=2}^N \ln p( {\bf z}_n | {\bf z}_{n-1} ) \right] + {\rm const.}  \\
+  =&  \ln p( {\bf A} ) + \mathbb{E}_{\bf Z} \left[ \sum_{n=2}^N \sum_i^K \sum_j^K z_{n-1, i} z_{nj} \ln A_{ij} \right] + {\rm const.}  \\
+  =&  \ln p( {\bf A} ) + \sum_{n=2}^N \sum_i^K \sum_j^K \overline{ z_{n-1, i} z_{nj} } \cdot \ln A_{ij} + {\rm const.}  \\
+\intertext{ となり、 }
+  q^*( {\bf A} )  &\propto  p( {\bf A} ) \times \prod_i^K \prod_j^K {A_{ij}}^{N_{ij}}  
+\intertext{ となる。ただし、$N_{ij} = \sum_{n=2}^N \overline{ z_{n-1, i} z_{nj} }$。ここで、事前分布として各 $i$ での $j$ に関する Dirichlet 分布 $p({\bf A}_i) \propto \prod_j^K {A_{ij}}^{(u_{ij}^A - 1)}$ を与えて規格化して、 }
+  q^*({\bf A}_i)  =&  \frac{ \Gamma\left( u_{i0}^A + M_i \right) }{\displaystyle  \prod_j^K \Gamma\left( u_{ij}^A + N_{ij} \right) }\prod_j^K {A_{ij}}^{(u_{ij}^A + N_{ij} - 1)}  
+\end{align}
+を得る。
+ただし、$u_{ij}^A$ は Dirichlet 分布のハイパーパラメータ、$u_{i0}^A = \sum_j^K u_{ij}^A$, $M_i = \sum_j^K N_{ij} = \sum_{n=2}^N \sum_j^K \overline{ z_{n-1, i} z_{nj} }$。
+
+Dirichlet 分布の性質から、期待値
+\begin{align}
+  \overline{A_{ij}}  =&  \frac{ u_{ij}^A + N_{ij} }{ u_{i0}^A + M_i }  \label{eqn:avgA} \\
+  \overline{\ln A_{ij}}  =&  \psi \left( u_{ij}^A + N_{ij} \right) - \psi\left( u_{i0}^A + M_i \right)  \label{eqn:avgLnA}  
+\end{align}
+を得る。
+
+\
+
+$\phi$ に関しては、$p( x_n | {\bf z}_n )$ の関数形に依存する。
+同様に適宜計算。
+
+
+\subsection{ 変分下限 ${\cal L}(q)$ の算出 }
+
+変分下限 ${\cal L}(q)$ の計算において、${\bf Z}, \theta$ が独立であると見なせる場合、式 (\ref{eqn:vbLqExpectation}) は、
+\begin{align}
+  {\cal L}(q)  = &  \mathbb{E}\bigl[\ln p(\theta) \bigr] - \mathbb{E}\bigl[\ln q(\theta) \bigr] + \mathbb{E}\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] - \mathbb{E}\bigl[\ln q( {\bf Z} ) \bigr]  \label{eqn:vbHmmGenericLq}  
+\end{align}
+と書き直すことが出来る。
+
+\
+
+このとき、下限値 ${\cal L}(q)$ は $q({\bf Z})$ に関して最適化されているはずであり、停留条件
+\begin{equation}
+  \frac{ \delta {\cal L}(q) }{ \delta q({\bf Z}) } = 0
+\end{equation}
+を満たすはずである。
+ただし、$\frac{ \delta f(y) }{ \delta y(x) }$ は、汎関数 $f$ の関数 $y$ についての汎関数微分。
+\begin{align}
+  \frac{ \delta {\cal L}(q) }{ \delta q({\bf Z}) }  =&  \frac{ \delta }{ \delta q({\bf Z}) } \sum_{\bf z} \int d\theta \; q(\theta) q({\bf Z}) \ln \left\{ \frac{ p(\theta) p( {\bf X}, {\bf Z} | \theta ) }{ q(\theta) q({\bf Z}) } \right\}  \\
+%
+    =&  \frac{ \delta }{ \delta q({\bf Z}) } \int d\theta \; q(\theta) \sum_{\bf z} q({\bf Z}) \left[ \ln \left\{ \frac{ p(\theta) }{ q({\theta}) } \right\}  + \ln \left\{ \frac{ p( {\bf X}, {\bf Z} | \theta ) }{ q({\bf Z}) } \right\} \right]  
+%
+\intertext{ 第１項に関しては、
+$\displaystyle \frac{ \delta }{ \delta q({\bf Z}) } \left[ \int d\theta \; q(\theta) \ln \left\{ \frac{ p(\theta) }{ q({\theta}) } \right\} \right] = 0 $
+なので、第２項のみ考えればよく、 }
+%
+    =&  \int d\theta \; q(\theta) \frac{ \delta }{ \delta q({\bf Z}) } \sum_{\bf z} q({\bf Z}) \bigl\{ \ln p( {\bf X}, {\bf Z} | \theta ) - \ln q({\bf Z}) \bigr\}  \\
+%
+    =&  \int d\theta \; q(\theta) \biggl[ 1 \times \bigl\{ \ln p( {\bf X}, {\bf Z} | \theta ) - \ln q({\bf Z}) \bigr\}  \notag  \\  
+    &  + q({\bf Z}) \times \left\{ 0 - \frac{ 1 }{ q({\bf Z}) } \right\} \biggr]  \\
+%
+    =&  \int d\theta \; q(\theta) \bigl\{ \ln p( {\bf X}, {\bf Z} | \theta ) - \ln q({\bf Z}) - 1 \bigr\}  \\
+%
+    =&  \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] - \ln q({\bf Z}) - 1  \\
+%
+    =&  0
+\end{align}
+したがって、
+\begin{align}
+  \ln q({\bf Z})  =&  \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] - 1 + {\rm const.}  \\
+  q({\bf Z})  &\propto  \exp\left( \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] \right)
+\end{align}
+$q({\bf Z})$ の ${\bf z}$ での積分を計算すると、
+\begin{align}
+  & \; \sum_{\bf z} \exp\left( \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] \right)  \\
+%
+    =& \; \sum_{\bf z} \exp\left\{ \ln \tilde{p}({\bf z}_1) + \sum_{n=2}^N \ln \tilde{p}({\bf z}_n | {\bf z}_{n-1}) + \sum_{m=1}^N \ln \tilde{p}(x_m | {\bf z}_m) \right\}  \\
+%
+    =& \; \sum_{\bf z} \tilde{p}({\bf z}_1) \cdot \prod_{n=2}^N \ln \tilde{p}({\bf z}_n | {\bf z}_{n-1}) \cdot \prod_{m=1}^N \ln \tilde{p}(x_m | {\bf z}_m)  \\
+%
+    =& \; \sum_{\bf z}  \tilde{p}({\bf Z}) \tilde{p}({\bf X} | {\bf Z})  \\
+%
+    =& \; \tilde{p}({\bf X})  \\
+%
+    =& \; \prod_{n=1}^N \tilde{c}_n
+\end{align}
+が得られるので、$q({\bf Z})$ を規格化できて、
+\begin{align}
+  q({\bf Z})  =&  \left( \prod_{n=1}^N \tilde{c}_n \right)^{-1} \exp\left( \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] \right)  \\
+%
+  \ln q({\bf Z})  =&  \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] - \sum_{n=1}^N \ln \tilde{c}_n  
+\end{align}
+となる。
+ただし $\tilde{c}_n$ は、$\tilde{p}({\bf z}_1)$, $\tilde{p}({\bf z}_n | {\bf z}_{n-1})$, $\tilde{p}(x_m | {\bf z}_m)$ を用いて $\alpha$-$\beta$ アルゴリズムを実行した際に得られるスケーリング係数であり、E-step の計算過程で既に得られている。
+
+この関係を用いると、式 (\ref{eqn:vbHmmGenericLq}) は、
+\begin{equation}
+  {\cal L}(q)  =  \mathbb{E}\bigl[\ln p(\theta) \bigr] - \mathbb{E}\bigl[\ln q(\theta) \bigr] + \sum_{n=1}^N \ln \tilde{c}_n  \label{eqn:vbHmmSimplidiedLq}  
+\end{equation}
+と書き直すことが出来る。
+
+\
+
+式 (\ref{eqn:vbHmmSimplidiedLq}) を既知のパラメータについて書き下すと、
+\begin{align}
+  {\cal L}(q)  =&  \mathbb{E}\bigl[\ln p({\boldsymbol \pi}) \bigr] + \mathbb{E}\bigl[\ln p({\bf A}) \bigr] + \mathbb{E}\bigl[\ln p(\phi) \bigr]  \notag  \\  
+    &  - \mathbb{E}\bigl[\ln q({\boldsymbol \pi}) \bigr] - \mathbb{E}\bigl[\ln q({\bf A}) \bigr] - \mathbb{E}\bigl[\ln q( \phi ) \bigr] + \sum_{n=1}^N \ln \tilde{c}_n  \label{eqn:vbHmmLq}  
+\end{align}
+となるので、その他のパラメータに関して必要な項をそれぞれ計算する。
+
+\paragraph{ $\mathbb{E}\bigl[\ln p({\boldsymbol \pi}) \bigr]$ : }
+${\boldsymbol \pi}$ の事前分布は Dirichlet 分布で与えられるので、
+\begin{align}
+  \mathbb{E}\bigl[\ln p({\boldsymbol \pi}) \bigr]  =&  \mathbb{E}_{\pi}\bigl[ \ln p({\boldsymbol \pi}) \bigr]  \\
+  =&  \mathbb{E}_{\pi}\Biggl[ \ln \biggl\{ \frac{\Gamma(u_0^\pi)}{\prod_i^K \Gamma(u_i^\pi)} \prod_i^K \pi_i^{u_i^\pi - 1} \biggr\} \Biggr]  \\
+  =&  \mathbb{E}_{\pi}\Biggl[ \biggl\{ \ln\Gamma(u_0^\pi) - \sum_i^K \ln\Gamma(u_i^\pi) + \sum_i^K (u_i^\pi - 1) \cdot \ln \pi_i \biggr\} \Biggr]  \\
+  =&  \ln\Gamma(u_0^\pi) + \sum_i^K \biggl\{ (u_i^\pi - 1) \cdot \overline{\ln \pi_i} - \ln\Gamma(u_i^\pi)\biggr\}  \label{eqn:expLnPPi}
+\end{align}
+
+\paragraph{ $\mathbb{E}\bigl[\ln p({\bf A}) \bigr]$ : }
+${\bf A}$ についても、事前分布は Dirichlet 分布で与えられるので、
+\begin{align}
+  \mathbb{E}\bigl[\ln p({\bf A}) \bigr]  =&  \mathbb{E}_{A}\bigl[ \ln p({\bf A}) \bigr]  \\
+  =&  \mathbb{E}_{A}\Biggl[ \ln \Biggl\{ \prod_i^K \Biggl( \frac{\Gamma(u_{i0}^A)}{ \prod_j^K \Gamma(u_{ij}^A)} \prod_j^K A_{ij}^{u_{ij}^A - 1} \Biggr) \Biggr\} \Biggr]  \\
+  =&  \mathbb{E}_{A}\Biggl[ \sum_i^K \biggl\{ \ln\Gamma(u_{i0}^A) - \sum_j^K \ln\Gamma(u_{ij}^A) + \sum_j^K (u_{ij}^A - 1) \ln A_{ij} \biggr\} \Biggr]  \\
+  =&  \sum_i^K \Biggl[ \ln\Gamma(u_{i0}^A) + \sum_j^K \Bigl\{ (u_{ij}^A - 1) \cdot \overline{\ln A_{ij}} - \ln\Gamma(u_{ij}^A) \Bigr\} \Biggr]  \label{eqn:expLnPA}
+\end{align}
+
+\paragraph{ $\mathbb{E}\bigl[\ln q({\boldsymbol \pi}) \bigr]$ : }
+$q({\boldsymbol \pi}) = {\rm Dir}(\pi_i|u_i^\pi + \overline{z_{1i}})$ なので、Dirichlet  分布の性質から、
+\begin{align}
+  \mathbb{E}\bigl[\ln q({\boldsymbol \pi}) \bigr]  =&  \mathbb{E}_{\pi}\bigl[ \ln q({\boldsymbol \pi}) \bigr]  \\
+%
+  =&  \sum_i^K \Biggl[ (u_i^\pi + \overline{z_{1i}} - 1) \Biggl\{ \psi(u_i^\pi + \overline{z_{1i}}) - \psi\Biggl(u_0^\pi + \sum_i^K \overline{z_{1i}}\Biggr) \Biggr\} \Biggr]  \notag  \\  
+    &  + \ln \Biggl\{ \frac{ \Gamma(u_0^\pi + \sum_i^K \overline{z_{1i}}) }{ \prod_i^K \Gamma(u_i^\pi + \overline{z_{1i}}) } \Biggr\}  \\
+%
+  =& \ln \Gamma(u_0^\pi + 1) + \sum_i^K \Bigl[ (u_i^\pi + \overline{z_{1i}} - 1) \bigl\{ \psi(u_i^\pi + \overline{z_{1i}})  \notag  \\  
+    &   - \psi(u_0^\pi + 1) \bigr\} - \ln \Gamma(u_i^\pi + \overline{z_{1i}}) \Bigr]  \label{eqn:expLnQPi}
+\end{align}
+
+\paragraph{ $\mathbb{E}\bigl[\ln q({\bf A}) \bigr]$ : }
+$q({\bf A}_i) = {\rm Dir}(A_{ij}|u_{ij}^A + N_{ij})$ なので、Dirichlet  分布の性質から、
+\begin{align}
+  \mathbb{E}\bigl[\ln q({\bf A}) \bigr]  =&  \mathbb{E}_{A}\bigl[ \ln q({\bf A}) \bigr]  \\
+%
+  =&  \sum_i^K \mathbb{E}_{A_i}\bigl[ \ln q({\bf A}_i) \bigr]  \\
+%
+  =&  \sum_i^K \Biggl[ \sum_j^K \Biggl\{ (u_{ij}^A + N_{ij} - 1) \Bigl[ \psi(u_{ij}^A + N_{ij}) - \psi(u_{i0}^A + M_i) \Bigr] \Biggr\}  \notag  \\  
+    &  + \ln \Biggl\{ \frac{ \Gamma(u_{i0}^A + M_i) }{ \prod_j^K \Gamma\bigl(u_{ij}^A + N_{ij}\bigr) } \Biggr\} \Biggr]  \\
+%
+\intertext{}
+%
+  =&  \sum_i^K \biggl[ \ln \Gamma(u_{i0}^A + M_i)  \notag  \\
+  &  + \sum_j^K \Bigl\{ \bigl(u_{ij}^A + N_{ij} - 1\bigr) \Bigl[ \psi\bigl(u_{ij}^A + N_{ij}\bigr) - \psi\bigl(u_{i0}^A + M_i\bigr) \Bigr]  \notag  \\  
+    &  - \ln \Gamma\bigl(u_{ij}^A + N_{ij}\bigr) \Bigr\} \biggr]  \label{eqn:expLnQA}
+\end{align}
+
+
+$\mathbb{E}\bigl[\ln p( \phi ) \bigr], \mathbb{E}\bigl[\ln q( \phi ) \bigr]$ については、関数形に依存するので、${\boldsymbol \pi}$, ${\bf A}$  と同様にそれぞれ計算する。
+
+

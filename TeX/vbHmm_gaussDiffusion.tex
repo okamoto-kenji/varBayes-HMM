@@ -1,0 +1,156 @@
+%!TEX root = derivation.tex
+
+\section{ ２次元ブラウン運動の動径分布 }
+
+２次元平面上で、拡散係数 $D$ で自由拡散する粒子の、時刻 $t$ 後の起点からの変位 $x$ は、
+\begin{align}
+  p(x|D, t)  =&  \frac{x}{2 D t} \exp\left( - \frac{x^2}{4 D t} \right)  \\
+%
+  =&  \frac{\delta x}{2} \exp\left( - \frac{\delta x^2}{4}  \right)  
+\end{align}
+にしたがう。
+ただし、$\delta \equiv (D t)^{-1}$ とする。
+
+したがって emission probability は
+\begin{align}
+  p(x_m|{\bf z}_m, {\boldsymbol \delta})  =&  \left\{ \prod_{i=1}^K  \frac{\delta_i x_m}{2} \exp\left( - \frac{\delta_i {x_m}^2}{4}  \right) \right\}^{z_{mi}}  \label{eqn:gaussDiff_pXnZn}  
+\end{align}
+となる。
+
+\
+
+状態遷移確率を、遷移確率行列 ${\bf A}$ で与えることにすると、${\bf X}, {\bf Z}, \theta$ の同時分布は、
+\begin{align}
+  p( {\bf X}, {\bf Z}, \theta )  =&  p( \theta ) \cdot \prod_i^K \pi^{z_{1i}} 
+    \cdot \prod_{n=2}^N \prod_i^K \prod_{j}^K {A_{ij}}^{ z_{n-1, i} z_{nj} }  \notag  \\  
+    &  \times \prod_{m=1}^N \prod_{i=1}^K  \biggl\{ \frac{\delta_i x_m}{2} \exp\left( - \frac{\delta_i {x_m}^2}{4} \right) \biggr\}^{z_{mi}}  \label{eqn:gaussDiff_jointDistVbHmmPc}
+\end{align}
+となる。
+
+
+%%%%%%%%%%%%%% E-step:
+\subsection{ E-step :}
+\begin{align}
+  \ln {p}( x_m | {\bf z}_m, {\boldsymbol \delta} )  =&  \sum_{i=1}^K z_{mi} \ln \left\{  \frac{\delta_i x_m}{2} \exp\left( - \frac{\delta_i {x_m}^2}{4} \right)  \right\}  \\  
+%
+  =&  \sum_{i=1}^K z_{mi} \left\{ \ln \delta_i + \ln x_m - \ln 2 - \frac{ \delta_i {x_m}^2 }{ 4 } \right\}  \\  
+%
+  \overline{\mathstrut \ln {p}( x_m | {\bf z}_m, {\boldsymbol \delta} )} =&  \sum_{i=1}^K z_{mi} \left\{ \overline{\ln \delta_i} - \ln x_m - \ln 2 - \frac{1}{4} \overline{\delta_i} {x_m}^2 \right\}
+\end{align}
+
+式 (\ref{eqn:pTildeXnZn}) に式 (\ref{eqn:gaussDiff_pXnZn}) を適用し、
+\begin{align}
+  \tilde{p}( x_m | {\bf z}_m, {\boldsymbol \delta} ) =& \prod_i^K  
+     \exp\left( \overline{\ln \delta_i} - \ln x_m - \ln 2 - \frac{1}{4} \overline{\delta_i} {x_m}^2  \right)^{z_{mi}}  \label{eqn:gaussDiff_pTildeXnZn}  
+\end{align}
+を得る。
+
+これを、式 (\ref{eqn:pTildeZ1}), (\ref{eqn:pTildeZnZn1}) とともに用いて forward-backward アルゴリズムを実行し、$\gamma, \xi$ 分布を得る。
+
+
+%%%%%%%%%%%%%% M-step:
+\subsection{ M-step :}
+${\boldsymbol \pi}$, ${\bf A}$ に関しては、\ref{sec:varBayesHmm} 節と同様に式 (\ref{eqn:avgPi}--\ref{eqn:avgLnPi}, \ref{eqn:avgA}--\ref{eqn:avgLnA}) を用いて期待値を求める。
+
+\
+
+各 $i$ に関しては独立として、${\boldsymbol \delta}$ に Gamma 事前分布
+\begin{align}
+  p( \delta_i )  =&  {\rm Gam}(\delta_i | u_i^a, u_i^b)
+\end{align}
+を与えて (ただし、$u_i^a$, $u_i^b$ はハイパーパラメータ)、
+\begin{align}
+  \ln q^*( \delta_i )  =&  \ln {\rm Gam}(\delta_i | u_i^a, u_i^b)  \notag  \\
+  &  + \mathbb{E}_{\bf Z}\left[ \sum_{m=1}^N z_{mi} \cdot  \ln \left\{  \frac{\delta_i x_m}{2} \exp\left( -\frac{\delta_i {x_m}^2}{4} \right)  \right\}  \right] + {\rm const.}  \\
+%
+\intertext{$\delta_i$ に依存する項だけ取り出すと、}
+%
+  =&  (u_i^a - 1) \ln \delta_i - u_i^b \delta_i  
+    + \mathbb{E}_{{\bf Z}}\left[ \sum_{m=1}^N z_{mi} \left\{ \ln \delta_i - \frac{ \delta_i {x_m}^2 }{ 4 } \right\} \right]  \notag  \\  
+    &  + {\rm const.}  \\
+%
+  =&  (u_i^a - 1) \ln \delta_i - u_i^b \delta_i  
+    + \sum_{m=1}^N \overline{z_{mi}} \left\{ \ln \delta_i - \frac{\delta_i {x_m}^2}{4} \right\} + {\rm const.}  \\
+%
+  =&  (u_i^a - 1) \ln \delta_i - u_i^b \delta_i  
+    + N_i \ln \delta_i - \frac{ R_i }{4} \delta_i + {\rm const.}  
+%
+\intertext{ただし、$N_i = \sum_m^N \overline{z_{mi}}$、$R_i = \sum_m^N \overline{z_{mi}} \cdot {x_m}^2$。}
+%
+  =&  (u_i^a + N_i - 1) \ln \delta_i - \left( u_i^b + \frac{ R_i }{4} \right) \delta_i  
+    + {\rm const.}  \\
+%
+  =&  (a_i^\delta - 1) \ln \delta_i - b_i^\delta \delta_i + {\rm const.}  \label{eqn:lnqDelta}
+\end{align}
+ただし、
+\begin{align}
+  a_i^\delta  =&  u_i^a + N_i  \\
+%%%%
+  b_i^\delta  =&  u_i^b + \frac{ R_i }{4}  
+\end{align}
+
+これら $a_i^\delta$, $b_i^\delta$ を使って Gamma 分布 (\ref{eqn:gaussGammaDist}) として、
+\begin{align}
+  q^*( \delta_i )  =&  {\rm Gam}(\delta_i | a_i^\delta, b_i^\delta) \\
+  =&  \frac{ 1 }{ \Gamma(a_i^\delta) } {b_i^\delta}^{a_i^\delta} {\delta_i}^{a_i^\delta - 1} e^{-b_i^\delta \delta_i}
+\end{align}
+を得る。
+Gamma 分布の性質と計算により、
+\begin{align}
+  \overline{\delta_i}  =&  \frac{a_i^\delta}{b_i^\delta}  \\
+  \overline{\ln \delta_i}  =&  \psi(a_i^\delta) - \ln b_i^\delta  
+\end{align}
+が得られる。
+
+
+%%%%%%%%%%%%%% lower bounds:
+\subsection{ 変分下限 ${\cal L}(q)$ の算出 }
+
+変分下限 ${\cal L}(q)$ を計算するため、式 (\ref{eqn:vbHmmLq}) から、
+\begin{align}
+  {\cal L}(q)  = &  \mathbb{E}\bigl[\ln p({\boldsymbol \pi}) \bigr] + \mathbb{E}\bigl[\ln p({\bf A}) \bigr] + \mathbb{E}\bigl[\ln p({\boldsymbol \mu}, {\boldsymbol \lambda}) \bigr]   \notag  \\
+  &  - \mathbb{E}\bigl[\ln q({\boldsymbol \pi}) \bigr] - \mathbb{E}\bigl[\ln q({\bf A}) \bigr] - \mathbb{E}\bigl[\ln q({\boldsymbol \mu}, {\boldsymbol \lambda}) \bigr] + \prod_n^N \tilde{c}_n  
+\end{align}
+を得る。
+
+$\mathbb{E}\bigl[\ln p({\boldsymbol \pi})\bigr]$, $\mathbb{E}\bigl[\ln p({\bf A})\bigr]$, $\mathbb{E}\bigl[\ln q({\boldsymbol \pi})\bigr]$, $\mathbb{E}\bigl[\ln q({\bf A}) \bigr]$ に関しては、式 (\ref{eqn:expLnPPi}), (\ref{eqn:expLnPA}), (\ref{eqn:expLnQPi}), (\ref{eqn:expLnQA}) で、$\tilde{c}_n$ に関しては E-step で、それぞれ得られているので、以下ではそれ以外の項について計算する。
+
+\paragraph{$\mathbb{E}\bigl[\ln p({\boldsymbol \delta}) \bigr]$ : }
+\begin{align}
+  \mathbb{E}\bigl[\ln p({\boldsymbol \delta}) \bigr]  
+    =&  \mathbb{E}\Biggl[ \ln \prod_i^K  {\rm Gam}(\delta_i | u_i^a, u_i^b)  \Biggr]  \\
+%
+    =&  \mathbb{E}\Biggl[ \ln \prod_i^K \left\{  
+        \frac{1}{\Gamma(u_i^a)} {u_i^b}^{u_i^a} {\delta_i}^{u_i^a - 1} e^{- u_i^b \delta_i} 
+      \right\}  \Biggr]  \\
+%
+    =&  \mathbb{E}\Biggl[ \sum_i^K \biggl\{  
+        - \ln \Gamma(u_i^a) + u_i^a \ln u_i^b + \left(u_i^a - 1\right) \ln \delta_i - u_i^b \delta_i  
+      \biggr\} \Biggr]  \\
+%
+    =&  \sum_i^K \biggl\{  
+          - \ln \Gamma(u_i^a) + u_i^a \ln u_i^b + (u_i^a - 1) \overline{\ln \delta_i} - u_i^b \overline{\delta_i}  
+      \biggr\}  
+\end{align}
+
+\paragraph{$\mathbb{E}\bigl[\ln q({\boldsymbol \delta}) \bigr]$ : }
+\begin{align}
+  \mathbb{E}\bigl[\ln q({\boldsymbol \delta}) \bigr]  
+    =&  \mathbb{E}\Biggl[ \ln \prod_i^K  {\rm Gam}(\delta_i | a_i^\delta, b_i^\delta)  \Biggr]  \\
+%
+    =&  \mathbb{E}\Biggl[ \ln \prod_i^K  \frac{1}{ \Gamma(a_i^\delta) } {b_i^\delta}^{a_i^\delta} {\delta_i}^{a_i^\delta - 1} e^{-b_i^\delta \delta_i} \Biggr]  \\
+%
+  =&  \mathbb{E}\Biggl[ \sum_i^K \biggl\{  
+      - \ln \Gamma(a_i^\delta) + a_i^\delta \ln b_i^\delta + (a_i^\delta - 1) \ln \delta_i - b_i^\delta \delta_i  %
+    \biggr\} \Biggr]  \\
+%
+  =&  \sum_i^K \biggl\{  
+      - \ln \Gamma(a_i^\delta) + a_i^\delta \ln b_i^\delta + (a_i^\delta - 1) \overline{\ln \delta_i} - b_i^\delta \overline{\delta_i}  
+    \biggr\}  \\
+%
+  =&  \sum_i^K \biggl\{  
+      - \ln \Gamma(a_i^\delta) + a_i^\delta \ln b_i^\delta + (a_i^\delta - 1) \overline{\ln \delta_i} - a_i^\delta  
+    \biggr\}  
+\end{align}
+
+%

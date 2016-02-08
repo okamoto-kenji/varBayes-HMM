@@ -1,0 +1,141 @@
+%!TEX root = derivation.tex
+
+\section{ Hidden Markov Model の解法 }
+
+\subsection{ 状態を表す潜在変数の定義 }
+
+全部で $N$ 個あるデータ点 ${\bf X} = \{ x_1, x_2, \dots , x_N\}$ それぞれが、$1 \dots K$ 状態のいずれかに属するとする。
+
+$N \times K$ ベクトルとして潜在変数 ${\bf Z} = \{ {\bf z}_1, {\bf z}_2, \dots, {\bf z}_N \}$, ${\bf z}_n = \{ z_{n1}, z_{n2}, \dots, z_{nK} \}$ を定義する。
+各データ点がどの状態に属するかを表すため、
+\begin{gather}
+  z_{nk} = \begin{cases}
+    0  \\
+    1  
+  \end{cases}  \\
+  \sum_{i=1}^K z_{ni} = 1
+\end{gather}
+とする。
+つまり、各 $n$ に対して１つだけが 1 となり、残りは 0 となる。
+
+\subsection{ 一般式 }
+
+一般的な (たとえば混合 Gauss 分布) の HMM を解く場合には、${\bf X}, {\bf Z}$ の同時分布を以下のように書き下す。
+\begin{equation}
+  p( {\bf X}, {\bf Z} | \theta )  =  p( {\bf z}_1 | \theta ) \times \prod_{n=2}^N p( {\bf z}_n | {\bf z}_{n-1}, \theta ) \times \prod_{m=1}^N p( x_m | {\bf z}_m, \theta )  \label {eqn:hmmLikelihood}
+\end{equation}
+このうち、$p( {\bf z}_1 | \theta )$ と $p( {\bf z}_n | {\bf z}_{n-1}, \theta )$ に関しては一般的に、
+\begin{align}
+  p( {\bf z}_1 | {\boldsymbol \pi} )  &=  \prod_{i=1}^K {\pi_i}^{z_{1i}}  \\
+  p( {\bf z}_n | {\bf z}_{n-1}, {\bf A} )  &=  \prod_{i=1}^K \prod_{j=1}^K {A_{ij}}^{z_{n-1,i} z_{nj}}
+\end{align}
+とすることができる。
+ただし、$\pi_i$ は初期状態が $i$ 状態である確率を表すパラメータで、$\sum_{i=1}^K \pi_i = 1$ 。
+$A_{ij}$ は $i$ 状態から次のステップで $j$ 状態に遷移する確率 ($i=j$ の場合 $i$ 状態に留まる確率) を表すパラメータ行列で、$\sum_{j=1}^K A_{ij} = 1$ 。
+
+${\boldsymbol \pi}$, ${\bf A}$ 以外の、主に $p( x_m | {\bf z}_m )$ に関わるパラメータを、まとめて $\phi$ で表す。
+
+\subsection{ EM アルゴリズムによる HMM 解法 }
+
+HMM を最尤法で解くためには、式 (\ref{eqn:hmmLikelihood}) 尤度関数を最大化するパラメータセット $\theta$ を求める必要がある。
+しかし、${\bf Z}$ が未知のため、このままでは解くことが出来ない。
+
+そこで、仮に与えたパラメータ $\theta^{\rm old}$ を基にして ${\bf Z}$ の期待値を求めることにして、式 (\ref{eqn:hmmLikelihood}) の対数尤度を書き直した
+\begin{equation}
+  Q( {\bf \theta}, {\bf \theta}^{\rm old} )  =  \sum_{\bf Z} p({\bf Z}|{\bf X}, {\bf \theta}^{\rm old}) \cdot \ln p({\bf X}, {\bf Z} | {\bf \theta})
+\end{equation}
+を求める。
+
+ここで新たな変数 $\gamma, \xi$ を導入する。
+\begin{align}
+  \gamma({\bf z}_n)  &=  p( {\bf z}_n | {\bf X}, {\bf \theta}^{\rm old} )  \\
+  \gamma(z_{nk})  &=  \mathbb{E}[ z_{nk} ] \; =  \sum_{{\bf z}_n} \gamma({\bf z}_n) \cdot z_{nk}  \\
+  \xi({\bf z}_n, {\bf z}_{n-1})  &=  p( {\bf z}_{n-1}, {\bf z}_n | {\bf X}, {\bf \theta}^{\rm old} )  \\
+  \xi( z_{n-1,i}, z_{nj} )  &=  \mathbb{E}[ z_{n-1, i} z_{nj} ] \; =  \sum_{{\bf z}_n, {\bf z}_{n-1}} \xi({\bf z}_n, {\bf z}_{n-1}) \cdot z_{n-1, i} z_{nj}
+\end{align}
+$\gamma(z_{nk})$ は、$n$ 番目のデータ点が $k$ 状態に属する確率、$\xi( z_{n-1, i}, z_{nj} )$ は $n-1$ から $n$ の間に $i$ 状態から $j$ 状態に遷移する確率を表す。
+
+これにより、
+\begin{align}
+  Q( {\bf \theta}, {\bf \theta}^{\rm old} )  =&  \sum_{i=1}^K \gamma(z_{1i}) \ln \pi_i  
+      + \sum_{n=2}^N \sum_{i=1}^K \sum_{j=1}^K \xi( z_{n-1, i}, z_{nj} ) \ln A_{ij}  \notag  \\  
+    &  + \sum_{n=1}^N \sum_{i=1}^K \gamma(z_{ni}) \ln p( x_n | \theta )
+\end{align}
+と書き直す。
+
+EM アルゴリズムでは、仮の $\theta_{\rm old}$ を基に $\gamma, \xi$ 分布を求める E-step と、得られた $\gamma, \xi$ 分布から $\theta$ の最尤値を更新する M-step とを、M-step で得られた $\theta$ を次の E-step の $\theta_{\rm old}$ として与えることで、値が収束するまで反復計算する。
+
+\subsubsection{ E-step }
+
+E-step では、$\gamma, \xi$ を求める。
+
+\paragraph{ Forward-backward (Baum-Welch) アルゴリズム : }  \
+
+$\gamma$ は
+\begin{align}
+  \gamma( {\bf z}_n )  &= \frac{ p({\bf X} | {\bf z}_n) \cdot p({\bf z}_n) }{ p({\bf X}) }  \\
+  &=  \frac{ \alpha({\bf z}_n) \cdot \beta({\bf z}_n) }{ p({\bf X}) }  \label{eqn:gammaOnAlphaBeta}
+\intertext{ と書くことができる。ただし、 }
+  \alpha( {\bf z}_n )  &\equiv  p( x_1, \dots, x_n, {\bf z}_n )  \\
+  \beta( {\bf z}_n )  &\equiv  p( x_{n+1}, \dots, x_N | {\bf z}_n )  
+\intertext{ と定義する。ここで、スケーリング係数 $c_n$ を導入する。 }
+  c_n &= p( x_n | x1, x2, \dots, x_{n-1} )
+\intertext{ とすると、乗法定理より }
+  p( x1, x2, \dots, x_n ) &= \prod_{m=1}^n c_m
+\intertext{ これを用いて $\alpha, \beta$ をそれぞれ }
+  \hat{\alpha}( {\bf z}_n ) &= \frac{ \alpha({\bf z}_n) }{ \prod_{m=1}^n c_m } = p( {\bf z}_n | x_1, x_2, \dots, x_n )  \\
+  \hat{\beta}( {\bf z}_n ) &= \frac{ \beta({\bf z}_n) }{ \prod_{m=n+1}^N c_m } = \frac{ p( {\bf x}_{n+1}, \dots, x_N | {\bf z}_n ) }{ \prod_{m=n+1}^N c_m }  \\
+\intertext{ $\hat{\alpha}$ に関しては、 }
+  \hat{\alpha}( {\bf z}_n )  &=  \frac{ p( x_n | {\bf z}_n ) }{ c_n } \sum_{{\bf z}_{n-1}} \hat{\alpha}({\bf z}_{n-1}) \cdot p({\bf z}_n | {\bf z}_{n-1})
+\intertext{ と再帰式に展開することができ、 }
+  \hat{\alpha}( {\bf z}_1 )  &=  \frac{ p( x_1 | {\bf z}_1 ) }{ p( x_1 ) } = \frac{ p( x_1 | {\bf z}_1 ) }{ \sum_{{\bf z}_1} p( x_1 | {\bf z}_1 ) }
+\intertext{ を得ることができるので、全領域で $\hat{\alpha}$ が得られる。 
+$\beta$ に関しても、}
+  \hat{\beta}( {\bf z}_n )  &=  \frac{ 1 }{ c_n } \sum_{{\bf z}_{n+1}} \hat{\beta}({\bf z}_{n+1}) \cdot p(x_{n+1} | {\bf z}_{n+1}) \cdot p({\bf z}_{n+1} | {\bf z}_n)
+\intertext{ と再帰式に展開することができ、 }
+  \hat{\beta}( z_{Nk} )  &=  1
+\end{align}
+とすればよいので、全領域で $\hat{\beta}$ が得られる。
+
+$\hat{\alpha}, \hat{\beta}$  を用いると、式 (\ref{eqn:gammaOnAlphaBeta}) を書き直して、$\gamma$ に関して、
+\begin{align}
+  \gamma( {\bf z}_n ) &= \hat{\alpha}({\bf z}_n) \cdot \hat{\beta}({\bf z}_n)
+\intertext{ $\xi$ に関しても }
+  \xi( {\bf z}_{n-1}, {\bf z}_n )  &=  \frac{ 1 }{ c_n } \hat{\alpha}({\bf z}_{n-1}) \cdot p( x_n | {\bf z}_n ) \cdot p( {\bf z}_n | {\bf z}_{n-1} ) \cdot \hat{\beta}( {\bf z}_n )
+\end{align}
+により、全領域で得ることができる。
+
+また、
+\begin{equation}
+  p( {\bf X} ) = \prod_{n=1}^N c_n
+\end{equation}
+から尤度を得ることが出来る。
+
+\subsubsection{ M-step }
+
+E-step で得られた $\gamma, \xi$ を用いて、パラメータ値を更新する。
+
+\begin{align}
+  \pi_k  &=  \frac{ \gamma(z_{1i}) }{ \displaystyle \sum_{j=1}^K \gamma(z_{1j}) }  \\
+  A_{ij}  &=  \frac{ \displaystyle \sum_{n=2}^N \xi( z_{n-1, i}, z_{nj} ) }{ \displaystyle \sum_{n=2}^N \sum_{k=1}^K \xi( z_{n-1, i}, z_{nk} ) }
+\end{align}
+
+$\phi$ に関しては、$p(x_n | {\bf z}_n)$ の関数形に依存する。
+ラグランジュ乗数を用いるなどして更新式を求める。
+
+\subsubsection{ Max-Sum (Viterbi) アルゴリズム }
+
+各 $n$ について最大の $\gamma( z_{nk} )$ を選ぶことが、最適な軌跡を復元することにはならない。
+$\hat{\bf \theta}$ を最尤パラメータとして、$p({\bf Z} | {\bf X}, \hat{\bf \theta})$ を最大化する ${\bf Z}$ を選ぶ必要がある。
+
+そのために、次の再帰式を計算する。
+\begin{align}
+  \omega({\bf z}_n)  &=  \ln p(x_n | {\bf z}_n) + \max_{{\bf z}_{n-1}} \bigl\{ \ln p({\bf z}_n | {\bf z}_{n-1}) + \omega({\bf z}_{n-1}) \bigr\}  \\
+  \omega({\bf z}_1)  &=  \ln p({\bf z}_1) + \ln p( x_1 | {\bf z}_1 )
+\intertext{ またその再帰計算の際、 }
+  \phi( z_{nj}^{\rm max} )  &=  z_{n-1,i}^{\rm max}
+\end{align}
+を記録しておく。
+
+最後に、$n=N$ から $\phi$ を利用して順に遡りながら、$p({\bf Z} | {\bf X}, \hat{\bf \theta})$ を最大化する経路を復元する。
+

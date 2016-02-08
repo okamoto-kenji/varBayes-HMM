@@ -1,0 +1,44 @@
+\documentclass[a4paper,11pt,fleqn]{report}
+\usepackage[dvipdfmx]{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{bm}
+%\usepackage{newpxtext}  % Palatino
+%\usepackage{newtxtext}  % Times
+
+\begin{document}
+
+\title{ Variational Bayes-Hidden Markov Model Analysis for Time Series Data %\\ --- FRET, Single-molecule Intensity, Diffusion and General Applications --- 
+}
+\author{ Kenji Okamoto }
+\date{\today}
+\maketitle
+
+\tableofcontents
+
+\chapter{ General Solution }
+\input{ solveVarBayes.tex }
+\input{ solveHmm.tex }
+\input{ solveVbHmm.tex }
+
+%%%%%
+%\chapter{ Time Stamped Photons and FRET  }
+%\input{ vbHmmTsTimeDepend.tex }
+%\input{ vbHmmTsK.tex }
+%\input{ vbHmmTsFretKIE.tex }
+
+%\chapter{ Single Photon Counting and FRET }
+%\input{ vbHmmPcA.tex }
+%\input{ vbHmmPcFret.tex }
+
+\chapter{ Gaussian Time Series }
+\input{ vbHmmGauss.tex }
+\input{ vbHmm_gaussIntensity.tex }
+\input{ vbHmm_gaussDiffusion.tex }
+
+%\appendix
+%\chapter{分布関数}
+%\input{ funcs.tex }
+
+\end{document}
+
+%%

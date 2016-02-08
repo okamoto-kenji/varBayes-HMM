@@ -1,0 +1,131 @@
+%!TEX root = derivation.tex
+
+\section{Solution of Variational Bayes}
+
+\subsection{Basic principle}
+
+最尤法では、得られた観測データ ${\bf X}$ に対して尤度関数 $p( {\bf X} | \Theta)$ を最大化するパラメータセット $\Theta$ を求めることを目的とする。
+
+変分ベイズ法では、尤度関数をパラメータで周辺化したエビデンス
+\begin{equation}
+    p( {\bf X} ) = \int d\Theta \; p( \Theta ) p( {\bf X} | \Theta )
+\end{equation}
+を取り扱う。
+
+エビデンス $p( {\bf X} )$ は次のように変形できる。
+\begin{align}
+  \ln p( {\bf X} )  &=  {\cal L}(q) + {\rm KL}(q||p)  \label{eqn:vbEvidence}
+\intertext{ ただし、 }
+  {\cal L}(q)  &=  \sum_{\bf z} \int d\Theta \; q( {\bf Z}, \Theta ) \ln \left\{ \frac{ p( {\bf X}, {\bf Z}, \Theta ) }{ q( {\bf Z}, \Theta ) } \right\}  \\
+  {\rm KL}(q||p)  &=  - \sum_{\bf z} \int d\Theta \; q( {\bf Z}, \Theta ) \ln \left\{ \frac{ p( {\bf Z}, \Theta | {\bf X} ) }{ q( {\bf Z}, \Theta ) } \right\}
+\end{align}
+とする。
+ただし、${\bf Z}$ は潜在変数、$\Theta$ はパラメータ。
+$q$ は ${\bf Z}$ および $\Theta$ の分布関数であり、${\cal L}(q)$, ${\rm KL}(q||p)$ は $q$ の汎関数 (関数を引数とする関数)。
+
+\
+
+潜在変数とパラメータに関して、真の分布関数 $p$ に近似できる分布関数 $q$ を求めたい。
+この時、
+\begin{itemize}
+\item Kullback-Leibler ダイバージェンス ${\rm KL}(q||p)$ は、２つの分布関数 $p$, $q$ の相似の程度を表す (小さいほど似通っている)。
+\item エビデンスの下限 ${\cal L}(q)$ 項と、${\rm KL}(q||p)$ 項は、ともに非負。
+\item エビデンス $p( {\bf X} )$ は既知の ${\bf X}$ にのみ依存しており、(未知ではあるが) １つの固定値を持っている。
+\end{itemize}
+といった点に注目すると、KL 項を最小化することと、 ${\cal L}(q)$ 項を最大化することが等価な目標であることが分かる。
+
+変分ベイズ法では、エビデンスの下限値 (変分下限) ${\cal L}(q)$ を最大化する分布関数 $q$ を求める。
+${\cal L}(q)$ の $q$ での汎関数微分 (変分) に基づいて解くので、変分ベイズと呼ぶ。
+
+
+\subsection{ Mean field approximation }
+
+実際に解くには、物理学における平均場近似に近い考え方を用いる。
+
+パラメータと潜在変数をまとめて {\bf Z} とした時、
+\begin{equation}
+  q({\bf Z})  =  \prod_{i=1}^M q_i({\bf Z}_i)
+\end{equation}
+に分解できるとすると、
+\begin{align}
+  {\cal L}(q)  &=  \int q({\bf Z}) \ln \left\{ \frac{ p({\bf X}, {\bf Z} | K) }{ q({\bf Z}) } \right\} d{\bf Z}  \\
+  &=  \int \prod_i q_i \left\{ \ln p({\bf X}, {\bf Z} | K)  -  \sum_i \ln q_i  \right\} d{\bf Z}  \\
+  &=  \int q_j \left\{ \int \ln p({\bf X}, {\bf Z} | K) \prod_{i \neq j}q_i d{\bf Z}_i \right\} d{\bf Z}_j - \int q_i \ln q_i d{\bf Z}_i + {\rm const.}  \\
+  &=  \int q_j \ln \tilde{p}({\bf X}, {\bf Z}_j | K) d{\bf Z}_j - \int q_j \ln q_j d{\bf Z}_j + {\rm const.}  \label{eqn:negKLdiv}
+\end{align}
+ただし、$\mathbb{E}_{i \neq j}[ \cdots ]$ は期待値を表すとして、
+\begin{equation}
+  \tilde{p}({\bf X}, {\bf Z}_j)  =  \mathbb{E}_{i \neq j}[ \ln p({\bf X}, {\bf Z} | K) ] + {\rm const.}
+\end{equation}
+$\{ q_{i \neq j}\}$ を固定化 (平均場近似) した上で ${\cal L}(q)$ が最大化するのは、式 (\ref{eqn:negKLdiv}) が負の KL-ダイバージェンスの関係であることに注意すると、$q_i({\bf Z}_j) \cong \tilde{p}({\bf X}, {\bf Z}_j)$ の時なので、最適解 $q_j^*({\bf Z}_j)$ は、
+\begin{equation}
+  \ln q_j^*({\bf Z}_j)  =  \mathbb{E}_{i \neq j}[ \ln p({\bf X}, {\bf Z} | K) ] + {\rm const.}
+\end{equation}
+で与えられる。
+
+
+\subsection{ 変分ベイズ法の EM アルゴリズム }
+
+潜在変数 ${\bf Z} = \{ {\bf z}_1, {\bf z}_2, \cdots, {\bf z}_N \}$ とパラメータ $\theta$ について
+\begin{equation}
+  q( {\bf Z}, \theta )  =  q( {\bf Z} ) q( \theta )
+\end{equation}
+に分離できるとすると、平均場近似によってそれぞれ、
+\begin{equation}
+  \ln q^*({\bf Z})  =  \mathbb{E}_{\theta}[ \ln p({\bf X}, {\bf Z}, \theta | K) ] + {\rm const.}
+\end{equation}
+を求める E-step と
+\begin{equation}
+  \ln q^*( \theta )  =  \mathbb{E}_{{\bf Z}}[ \ln p({\bf X}, {\bf Z}, \theta | K) ] + {\rm const.}
+\end{equation}
+を求める M-step を繰り返せばよい。
+
+
+\subsection{ 下限値 ${\cal L}(q)$ の算出 }
+
+
+式 (\ref{eqn:vbEvidence}) で表されるエビデンスの中で、最大値の下限を表す ${\cal L}(q)$ 項は、最適化ステップが進むとともに単調に増加する。
+そこでこの値をステップ毎に計算することで、計算が正しく行われていることの確認になる。
+
+また、最適化が完了した時にはエビデンスの近似値となるので、収束の確認、モデル間の比較等をおこなうためにも ${\cal L}(q)$ の値を計算する必要がある。
+
+${\cal L}(q)$ はさらに、
+\begin{align}
+  {\cal L}(q)  = \;&  \sum_{\bf z} \int d\theta \; q( {\bf Z}, \theta ) \ln p( {\bf X}, {\bf Z}, \theta ) 
+  -  \sum_{\bf z} \int d\theta \; q( {\bf Z}, \theta ) \cdot \ln q( {\bf Z}, \theta )  \\
+%
+  = \;&  \mathbb{E}_{{\bf Z}, \theta}\bigl[\ln p( {\bf X}, {\bf Z}, \theta ) \bigr] - \mathbb{E}_{{\bf Z}, \theta}\bigl[\ln q( {\bf Z}, \theta ) \bigr]  \label{eqn:vbLqExpectation}
+\end{align}
+と展開でき、実際にはこれを計算する。
+
+\
+
+EM-アルゴリズムでは、E-step で ${\bf Z}$ 分布を更新した直後に変分下限 ${\cal L}(q)$ を計算し、収束判定等をおこなう。
+
+\subsection{ モデル選択、混合要素数の決定 }
+
+変分ベイズ法は複数のモデル間での最適モデル選択に用いることもできる。
+モデル $m$ に対して、規格化された変分下限 ${\cal L}(q | m)$ を求め、
+\begin{equation}
+	p(m) {\cal L}(q | m)
+\end{equation}
+を計算して比較すればよい。
+
+$p(m)$ は各モデルについての事前分布であり、各 $m$ について $p(m) = 1$ とすることができれば、直接 ${\cal L}(q | m)$ を比較すればよいことになる。
+
+\
+
+混合ガウス分布のように、等価な複数の分布の混合分布を考える場合、最適解から混合要素同士を入れ替えた別の設定もまた最適解となる。
+そのような等価なパラメータ設定の組み合わせは、$K$ 個の混合要素を考えた場合、$K!$ 通りとなる。
+
+ちなみに、最尤推定の場合には、この冗長性は問題にならない。
+最適解は、パラメータの初期値に依存して１つだけ求められ、それ以外の等価な解は無関係となる。
+
+この影響を取り除くためには、最も簡単な近似は、得られた変分下限に $\ln K!$ を加えることである。
+
+したがって、要素数の異なる混合分布の間でモデル選択する場合には、
+\begin{equation}
+	p(K) \bigl\{ {\cal L}(q | K) + \ln K! \bigr\}
+\end{equation}
+を各 $K$ について求めて比較すればよい。
+

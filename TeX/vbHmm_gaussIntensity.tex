@@ -1,0 +1,257 @@
+%!TEX root = derivation.tex
+
+\section{ Gaussian １分子蛍光強度信号 }
+
+蛍光1分子の蛍光強度が平均 $\mu$、分散 $\sigma^2$ (精度は $\lambda \equiv \sigma^{-2}$) の Gauss 分布
+\begin{align}
+  p( x_m | \mu, \lambda )  =&  \mathcal{N}\left( x_m | \mu, \lambda \right)  \\
+%
+  =&  \frac{1}{\sqrt{ 2 \pi {\sigma}^2}} \exp\left( - \frac {\left( x_m - \mu \right)^2 }{2 {\sigma}^2} \right)  \\
+%
+    =&  \sqrt{\frac{\lambda}{2 \pi}} \exp\left( - \frac {\lambda}{2} \left( x_m - \mu \right)^2 \right)  
+\end{align}
+で得られるとする。
+このとき、$i$ 量体 (本節では虚数単位の $i$ は用いない) の強度は
+\begin{align}
+  p( x_m | \mu, \lambda )  =&  \mathcal{N}\left( x_m | i \mu, \lambda/i \right)  \\
+%
+  =&  \sqrt{\frac{\lambda}{2 \pi i}} \exp\left( - \frac {\lambda}{2 i} \left( x_m - i \mu \right)^2 \right)  
+\end{align}
+になるので、emission probability  は
+\begin{align}
+  p( x_m | {\bf z}_m, \mu, \lambda )  =&  \prod_{i=1}^K \biggl\{ \sqrt{\frac{\lambda}{2 \pi i}} \exp\left( - \frac {\lambda}{2 i} \left( x_m - i \mu \right)^2 \right) \biggr\}^{z_{mi}}  \label{eqn:gaussInt_pXnZn}  
+\end{align}
+で与えられる。
+
+%\
+
+状態遷移確率を遷移確率行列 ${\bf A}$ で与えることにすると、${\bf X}, {\bf Z}, \theta$ の同時分布は、
+\begin{align}
+  p( {\bf X}, {\bf Z}, \theta )  =&  p( \theta ) \times \prod_i^K \pi^{z_{1i}}  
+    \times \prod_{n=2}^N \prod_i^K \prod_{j}^K {A_{ij}}^{ z_{n-1, i} z_{nj} }  \notag  \\  
+    &  \times \prod_{m=1}^N \prod_{i=1}^K \biggl\{ \sqrt{\frac{\lambda}{2 \pi i}} \exp\left( - \frac {\lambda}{2 i} \left( x_m - i \mu \right)^2 \right) \biggr\}^{z_{mi}}  
+\end{align}
+となる。
+
+
+%%%%%%%%%%%%%% E-step:
+\subsection{ E-step :}
+\begin{align}
+  \ln {p}( x_m | {\bf z}_m, \mu, \lambda ) =& \sum_{i=1}^K \ln \left\{  \sqrt{\frac{\lambda}{2 \pi i}} \exp\left( - \frac {\lambda}{2 i} \left( x_m - i \mu \right)^2 \right)  \right\}^{z_{mi}}  \\  
+%
+  =&  \sum_{i=1}^K \frac{z_{mi}}{2} \left\{  \ln \lambda - \ln 2 \pi i 
+    - \frac{\lambda}{i} \left( x_m - i \mu \right)^2  \right\}  \\  
+%
+  \overline{\mathstrut \ln {p}( x_m | {\bf z}_m, \mu, \lambda )}  =&  
+    \sum_{i=1}^K \frac{z_{mi}}{2} \left(  \overline{\ln \lambda}  
+    - \ln 2 \pi i - \frac{1}{i} \overline{ \lambda\left( x_m - i \mu \right)^2 }  \right)
+\end{align}
+
+式 (\ref{eqn:pTildeXnZn}) に式 (\ref{eqn:gaussInt_pXnZn}) を適用し、
+\begin{align}
+  \tilde{p}( x_m | {\bf z}_m, \mu, \lambda ) =& \prod_i^K \left\{  
+     \frac{1}{\sqrt{2 \pi i}} 
+     \exp\left( \frac {1}{2}  \left[  \overline{\ln\lambda} - \frac{1}{i} \overline{\lambda \left( x_m - i \mu \right)^2  }  
+     \right] \right) \right\}^{z_{mi}}  \label{eqn:gaussInt_pTildeXnZn}  
+%
+\intertext{後で得られる $\mu_{0}$, $\beta^\mu$, $a^\lambda$, $b^\lambda$ を使って}
+%
+  =& \prod_i^K \Biggl\{  
+     \frac{1}{\sqrt{2 \pi i}}  \notag  \\  
+   &  \times  \exp\biggl( \frac {1}{2}  \biggl[  \overline{\ln\lambda} - \frac{i}{\beta^\mu}  
+       - \frac{a^\lambda}{b^\lambda} \frac{ \left( x_m - i \mu_{0} \right)^2 }{i} 
+     \biggr] \biggr) \Biggr\}^{z_{mi}}  
+\end{align}
+を得る。
+
+これを、式 (\ref{eqn:pTildeZ1}), (\ref{eqn:pTildeZnZn1}) とともに用いて forward-backward アルゴリズムを実行し、$\gamma, \xi$ 分布を得る。
+
+
+%%%%%%%%%%%%%% M-step:
+\subsection{ M-step :}
+${\boldsymbol \pi}$, ${\bf A}$ に関しては、\ref{sec:varBayesHmm} 節と同様に式 (\ref{eqn:avgPi}--\ref{eqn:avgLnPi}, \ref{eqn:avgA}--\ref{eqn:avgLnA}) を用いて期待値を求める。
+
+\
+
+$\mu, \lambda$ に関しては独立でなく、各 $i$ に関しても独立ではないことに注意。
+Gauss-Gamma 事前分布
+\begin{align}
+  p( \mu, \lambda )  =&  \mathcal{N}\left(\mu | u^\mu, (u^\beta \lambda)^{-1}\right) {\rm Gam}(\lambda | u^a, u^b)
+%
+\intertext{を与えて (ただし、$u^\mu$, $u^\beta$, $u^a$, $u^b$ はハイパーパラメータ)、}
+%
+  \ln q^*( \mu, \lambda )  =&  \ln \mathcal{N}\left(\mu | u^\mu, (u^\beta \lambda)^{-1}\right) + \ln {\rm Gam}(\lambda | u^a, u^b)  \notag  \\
+  &  + \mathbb{E}_{\bf Z}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} \cdot  \ln \mathcal{N}( x_m | i \mu, i/\lambda )  \right] + {\rm const.}  \\
+%
+\intertext{$\mu$, $\lambda$ に依存する項だけ取り出すと、}
+%
+  =&  \frac{1}{2} \ln \lambda - \frac{u^\beta \lambda}{2} (\mu - u^\mu)^2 + (u^a - 1) \ln \lambda - u^b \lambda  \notag  \\
+  &  + \mathbb{E}_{{\bf Z}}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} \cdot \frac{1}{2} \left\{ \ln \lambda - \frac{\lambda}{i} \left( {x_m} - i \mu \right)^2 \right\} \right] + {\rm const.}  \label{eqn:gaussInt_lnqMuLm}
+\end{align}
+
+$\ln q^*(\mu, \lambda)$ は $\ln q^*(\mu | \lambda) + \ln q^*(\lambda)$ と書けるので、$\mu$ に依存する項だけ考えると、
+\begin{align}
+  \ln q^*( \mu | \lambda )  =&  - \frac{u^\beta \lambda}{2} ({\mu}^2 - 2 u^\mu \mu)  \notag  \\  
+    &  - \mathbb{E}_{{\bf Z}}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} \cdot \frac{\lambda}{2 i} \left\{ (i \mu)^2 - 2 i x_m \mu \right\} \right] + {\rm const.}  \\
+%
+  =&  - \frac{\lambda}{2} \left(u^\beta + \mathbb{E}_{{\bf Z}}\left[ \sum_{i=1}^K \sum_{m=1}^N i z_{mi} \right] \right) {\mu}^2  \notag  \\  
+    &  + \lambda  \left(  u^\beta u^\mu + \mathbb{E}_{{\bf Z}}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} x_m \right] \right) \mu + {\rm const.}  \\
+%
+  =&  - \frac{\lambda}{2} \left(u^\beta + \sum_{i=1}^K i \sum_{m=1}^N \overline{z_{mi}} \right) \mu^2  \notag  \\  
+    &  + \lambda  \left( u^\beta u^\mu + \sum_{i=1}^K \sum_{m=1}^N \overline{z_{mi}} x_m \right) \mu + {\rm const.}  \\
+%
+\intertext{}
+%
+  =&  - \frac{\lambda}{2} \left(u^\beta + \sum_{i=1}^K i N_i \right) \mu^2  
+  + \lambda  \left( u^\beta u^\mu + \sum_{i=1}^K N_i \overline{x}_i \right) \mu  \notag  \\  
+    &  + {\rm const.}  \\
+%
+  =&  - \frac{\lambda}{2} \left(u^\beta + N_0^i \right) {\mu}^2  
+  + \lambda  \left( u^\beta u^\mu + N_0 \overline{x}_0 \right) \mu + {\rm const.}  
+%
+\intertext{ただし、}
+  N_i =& \sum_{m=1}^N \overline{z_{mi}}  \\
+  N_0^i =& \sum_{i=1}^K i N_i  \\
+  N_0 =& \sum_{i=1}^K N_i  \\
+  N_x =& \sum_{i=1}^K \sum_{m=1}^N \overline{z_{mi}} x_m  
+\end{align}
+%
+$\ln q^*(\mu | \lambda)$ が $\mu_i$ の二乗に依存しているので、$q^*(\mu | \lambda)$ は Gauss 分布。
+平方完成から、
+\begin{align}
+  \beta^\mu  =&  u^\beta + N_0^i  \\
+  \mu_{0}  =&  \frac{1}{\beta^\mu} \left( u^\beta u^\mu + N_x \right)
+\end{align}
+を使って、
+\begin{align}
+  q^*(\mu | \lambda)  =&  \mathcal{N}\left( \mu | \mu_{0}, \left( \beta^\mu \lambda \right)^{-1} \right)  \label{eqn:gaussInt_lnqMu_Lm}
+\end{align}
+を得る。
+
+$q^*(\lambda)$ に関しては、
+\begin{align}
+  \ln q^*(\lambda)  =&  \ln q^*(\mu, \lambda) - \ln q^*(\mu | \lambda)
+\end{align}
+の関係から、式 (\ref{eqn:gaussInt_lnqMuLm}) と式 (\ref{eqn:lnqMu_Lm}) を使って、$\lambda$ に依存する項だけを抜き出して、
+\begin{align}
+  \ln q^*(\lambda)  =&  \frac{1}{2} \ln \lambda - \frac{u^\beta \lambda}{2} (\mu - u^\mu)^2 + (u^a - 1) \ln \lambda - u^b \lambda  \notag  \\
+  &  + \mathbb{E}_{{\bf Z}}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} \cdot \frac{1}{2} \left\{ \ln \lambda - \frac{\lambda}{i} \left( {x_m} - i \mu \right)^2 \right\} \right]  \notag  \\  
+  &  - \left\{  \frac{1}{2} \ln \lambda - \frac{\beta^\mu \lambda}{2} \left( \mu - \mu_{0} \right)^2  \right\}
+    + {\rm const.}  \\
+%
+    =&  \left( u^a - 1 + \frac{1}{2} \mathbb{E}_{\bf Z}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} \right] \right) \ln \lambda  \notag \\ 
+    &  - \biggl\{ \frac{u^\beta}{2} (\mu - u^\mu)^2 + u^b + \frac{1}{2} \mathbb{E}_{{\bf Z}}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} \frac{\left( x_m - i \mu \right)^2}{i} \right]  \notag  \\  
+    &  - \frac{\beta^\mu}{2} \left( \mu - \mu_{0} \right)^2 \biggr\} \lambda
+    + {\rm const.}  \\
+%
+    =&  (a^\lambda - 1) \ln \lambda - b^\lambda \lambda + {\rm const.}
+\end{align}
+ただし、
+\begin{align}
+  a^\lambda  =&  u^a + \frac{1}{2} \mathbb{E}_{\bf Z}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} \right]  \\
+  =&  u^a + \frac{N_0}{2}  \\
+%%%%
+  b^\lambda  =&  u^b + \frac{1}{2} \mathbb{E}_{\bf Z}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} \frac{\left( x_m - i \mu \right)^2}{i} \right]  + \frac{u^\beta}{2} \left( \mu - u^\mu \right)^2  \notag  \\  
+    &  - \frac{\beta^\mu}{2} \left( \mu - \mu_{0} \right)^2  \\
+%
+  =&  u^b + \frac{1}{2} \left\{ \sum_{i=1}^K \sum_{m=1}^N \overline{z_{mi}} \frac{ {x_m}^2 - 2 i x_m \mu + (i \mu)^2}{i}  \right\}  + \frac{u^\beta}{2} \left( \mu - u^\mu \right)^2  \notag  \\  
+    &  - \frac{u^\beta + N_0^i}{2} \left( \mu - \mu_{0} \right)^2  \\
+%
+  =&  u^b + \frac{1}{2} \left\{  
+      \sum_{i=1}^K \sum_{m=1}^N \frac{ \overline{z_{mi}} {x_m}^2}{i}  
+      - 2 \mu \sum_{i=1}^K \sum_{m=1}^N \overline{z_{mi}} x_m  
+      + \mu^2 \sum_{i=1}^K i \sum_{m=1}^N \overline{z_{mi}}  
+    \right\}  \notag  \\  
+    &  - \frac{N_0^i}{2} \mu^2  + \left\{ (u^\beta + N_0^i) \mu_0 - u^\beta u^\mu \right\} \mu
+    + \frac{u^\beta}{2} {u^\mu}^2 - \frac{u^\beta + N_0^i}{2} {\mu_{0}}^2  \\
+%
+\intertext{}
+%
+  =&  u^b + \frac{1}{2} \left\{  
+      \sum_{i=1}^K \sum_{m=1}^N \frac{ \overline{z_{mi}} {x_m}^2}{i}  -  2 N_x \mu  +  N_0^i \mu^2  \right\}  \notag  \\  
+    &  - \frac{N_0^i}{2} \mu^2  + ( \beta^\mu \mu_0 - u^\beta u^\mu ) \mu
+    + \frac{u^\beta}{2} {u^\mu}^2 - \frac{u^\beta + N_0^i}{2} {\mu_{0}}^2  \\
+%
+  =&  u^b + \frac{1}{2} \sum_{i=1}^K \sum_{m=1}^N \frac{ \overline{z_{mi}} {x_m}^2}{i}  
+      +  \left\{ (u^\beta u^\mu + N_x) - u^\beta u^\mu - N_x \right\} \mu  \notag  \\  
+    &  + \frac{u^\beta}{2} {u^\mu}^2 - \frac{u^\beta + N_0^i}{2} {\mu_{0}}^2  \\
+%
+  =&  u^b + \frac{1}{2} \sum_{i=1}^K \sum_{m=1}^N \frac{ \overline{z_{mi}} {x_m}^2}{i}  
+    + \frac{u^\beta}{2} {u^\mu}^2 - \frac{u^\beta + N_0^i}{2} {\mu_{0}}^2  
+\end{align}
+
+これら $\mu_{0}$, $\beta^\mu$, $a^\lambda$, $b^\lambda$ を使って Gauss-Gamma 分布 (\ref{eqn:gaussGammaDist}) として、
+\begin{align}
+  q^*( \mu, \lambda )  =&  \mathcal{N}\left( \mu | \mu_{0}, \left(\beta^\mu {\lambda} \right)^{-1} \right) {\rm Gam}(\lambda | a^\lambda, b^\lambda) \\
+  =&  \sqrt{ \frac{ \beta^\mu \lambda }{ 2 \pi }} \exp\left\{ - \frac{\beta^\mu \lambda}{2} (\mu - \mu_{0})^2 \right\} \frac{ 1 }{ \Gamma(a^\lambda) } {b^\lambda}^{a^\lambda} {\lambda}^{a^\lambda - 1} e^{-b^\lambda \lambda}
+\end{align}
+を得る。
+計算により、
+\begin{align}
+  \overline{\mu}  =&  \mu_{0}  \\
+  \overline{\lambda}  =&  \frac{a^\lambda}{b^\lambda}  \\
+  \overline{\ln \lambda}  =&  \psi(a^\lambda) - \ln b^\lambda  \\
+  \overline{\lambda (x - {\mu})^2}  =&  \frac{1}{\beta^\mu} + \frac{a^\lambda}{b^\lambda} (x - \mu_{0})^2  \\  
+  \overline{\lambda (x - i {\mu})^2}  =&  \frac{i^2}{\beta^\mu} + \frac{a^\lambda}{b^\lambda} (x - \mu_{0})^2  
+\end{align}
+が得られる。
+
+
+%%%%%%%%%%%%%% lower bounds:
+\subsection{ 変分下限 ${\cal L}(q)$ の算出 }
+
+変分下限 ${\cal L}(q)$ を計算するため、式 (\ref{eqn:vbHmmLq}) から、
+\begin{align}
+  {\cal L}(q)  = &  \mathbb{E}\bigl[\ln p({\boldsymbol \pi}) \bigr] + \mathbb{E}\bigl[\ln p({\bf A}) \bigr] + \mathbb{E}\bigl[\ln p(\mu, \lambda) \bigr]   \notag  \\
+  &  - \mathbb{E}\bigl[\ln q({\boldsymbol \pi}) \bigr] - \mathbb{E}\bigl[\ln q({\bf A}) \bigr] - \mathbb{E}\bigl[\ln q( \mu, \lambda) \bigr] + \prod_n^N \tilde{c}_n  
+\end{align}
+を得る。
+
+$\mathbb{E}\bigl[\ln p({\boldsymbol \pi})\bigr]$, $\mathbb{E}\bigl[\ln p({\bf A})\bigr]$, $\mathbb{E}\bigl[\ln q({\boldsymbol \pi})\bigr]$, $\mathbb{E}\bigl[\ln q({\bf A}) \bigr]$ に関しては、式 (\ref{eqn:expLnPPi}), (\ref{eqn:expLnPA}), (\ref{eqn:expLnQPi}), (\ref{eqn:expLnQA}) で、$\tilde{c}_n$ に関しては E-step で、それぞれ得られているので、以下ではそれ以外の項について計算する。
+
+\paragraph{$\mathbb{E}\bigl[\ln p( \mu, \lambda) \bigr]$ : }
+\begin{align}
+  \mathbb{E}\bigl[\ln p( \mu, \lambda) \bigr]  =&  \mathbb{E}\Biggl[ \ln  \mathcal{N}\left(\mu | u^\mu, (u^\beta \lambda)^{-1}\right) {\rm Gam}(\lambda | u^a, u^b)  \Biggr]  \\
+%
+    =&  \mathbb{E}\Biggl[ \ln  \sqrt{\frac{u^\beta \lambda}{2\pi}} \exp\left\{-\frac{u^\beta \lambda}{2} (\mu - u^\mu)^2 \right\}  \notag  \\  
+      &  \times  \frac{1}{\Gamma(u^a)} {u^b}^{u^a} {\lambda}^{u^a - 1} e^{- u^b \lambda} \Biggr]  \\
+%
+  =&  \mathbb{E}\Biggl[  
+      \frac{1}{2} \ln u^\beta + \frac{1}{2} \ln \lambda - \frac{1}{2} \ln 2 \pi  - \frac{u^\beta}{2} \lambda (\mu - u^\mu)^2  \notag  \\  
+    &  - \ln \Gamma(u^a) + u^a \ln u^b  + \left(u^a - 1\right) \ln \lambda - u^b \lambda  
+    \Biggr]  \\
+%
+  =&  \frac{1}{2} \ln u^\beta - \frac{1}{2} \ln 2 \pi - \frac{u^\beta}{2} \overline{\lambda (\mu - u^\mu)^2}  \notag  \\  
+    &  - \ln \Gamma(u^a) + u^a \ln u^b + \left(u^a - \frac{1}{2}\right) \overline{\ln \lambda} - u^b \overline{\lambda}  \\ 
+%
+  =&  \frac{1}{2} \ln u^\beta - \frac{1}{2} \ln 2 \pi - \frac{u^\beta}{2} \left[ \frac{1}{\beta^\mu} + \frac{a^\lambda}{b^\lambda} \left( \mu_{0} - u^\mu \right)^2 \right]  \notag  \\  
+    &  - \ln \Gamma(u^a) + u^a \ln u^b  + \left(u^a - \frac{1}{2}\right) \overline{\ln \lambda} - u^b \overline{\lambda}  
+\end{align}
+
+\paragraph{$\mathbb{E}\bigl[\ln q( \mu, \lambda) \bigr]$ : }
+\begin{align}
+  \mathbb{E}\bigl[\ln q( \mu, \lambda) \bigr]  =&  
+    \mathbb{E}\Biggl[ \ln \mathcal{N}\left(\mu | \mu_{0}, \left( \beta^\mu \lambda \right)^{-1}\right) {\rm Gam}(\lambda | a^\lambda, b^\lambda)  \Biggr]  \\
+%
+    =&  \mathbb{E}\Biggl[ \ln \biggl\{ 
+      \sqrt{ \frac{ \beta^\mu \lambda }{ 2 \pi }} \exp\left( - \frac{\beta^\mu \lambda}{2} (\mu - \mu_{0})^2 \right)  \notag  \\  
+    &  \times  \frac{ 1 }{ \Gamma(a^\lambda) } {b^\lambda}^{a^\lambda} {\lambda}^{a^\lambda - 1} e^{-b^\lambda \lambda}  \biggr\}  \Biggr]  \\
+%
+  =&  \mathbb{E}\Biggl[ \biggl\{  
+      \frac{1}{2} \ln \beta^\mu + \frac{1}{2} \ln \lambda - \frac{1}{2} \ln 2 \pi - \frac{\beta^\mu}{2} \lambda (\mu - \mu_{0})^2  \notag  \\
+      &  - \ln \Gamma(a^\lambda) + a^\lambda \ln b^\lambda + (a^\lambda - 1) \ln \lambda - b^\lambda \lambda  \biggr\} \Biggr]  \\
+%
+  =&  \frac{1}{2} \ln \beta^\mu - \frac{1}{2} \ln 2 \pi - \frac{\beta^\mu}{2} \overline{\lambda (\mu - \mu_{0})^2}  \notag  \\  
+    &  - \ln \Gamma(a^\lambda) + a^\lambda \ln b^\lambda + \left( a^\lambda - \frac{1}{2} \right) \overline{\ln \lambda} - b^\lambda \overline{\lambda}  \\
+%
+\intertext{}
+%
+  =&  \frac{1}{2} \ln \beta^\mu - \frac{1}{2} \ln 2 \pi - \frac{\beta^\mu}{2} \left[ \frac{1}{\beta^\mu} + \frac{a^\lambda}{b^\lambda} \left( \mu_{0} - \mu_{0} \right)^2 \right]  \notag  \\
+      &  - \ln \Gamma(a^\lambda) + a^\lambda \ln b^\lambda + \left( a^\lambda - \frac{1}{2} \right) \overline{\ln \lambda} - b^\lambda \overline{\lambda}  \\
+%
+  =&  \frac{1}{2} \ln \beta^\mu - \frac{1}{2} \ln 2 \pi - \frac{1}{2}  
+        - \ln \Gamma(a^\lambda) + a^\lambda \ln b^\lambda  \notag  \\  
+    &  + \left( a^\lambda - \frac{1}{2} \right) \overline{\ln \lambda} - a^\lambda  
+\end{align}
+
+%
