@@ -1,7 +1,7 @@
 Variational Bayes-Hidden Markov model (VB-HMM) analysis programs:
 
 Kenji Okamoto and Yasushi Sako, RIKEN
-revised: 2015.09.15
+revised: 2016.02.08
 
 System Requirements:
   VB-HMM softwares can be built on darwin or linux operating system.
@@ -15,15 +15,17 @@ Build:
     make [command]
 
   Avilable [command] is as follows:
-    ts       : to build VB-HMM-TS (vbHmmTs)
-    fret     : to build VB-HMM-TS-FRET (vbHmmTsFret)
-    pc       : to build VB-HMM-PC (vbHmmPc)
-    pcFret   : to build VB-HMM-PC-FRET (vbHmmPcFret)
-    gauss   : to build VB-HMM-Gauss (vbHmmGauss)
-    template : to build template VB-HMM (vbHmm_template)
-    all      : to build all above
-    [blank]  : same as 'all'
-    clean    : delete binary files
+    ts        : to build VB-HMM-TS (vbHmmTs)
+    fret      : to build VB-HMM-TS-FRET (vbHmmTsFret)
+    pc        : to build VB-HMM-PC (vbHmmPc)
+    pcFret    : to build VB-HMM-PC-FRET (vbHmmPcFret)
+    gauss     : to build VB-HMM-Gauss (vbHmmGauss)
+    gaussInt  : to build VB-HMM-Gauss for SM-Intensity (vbHmmGauss)
+    gaussDiff : to build VB-HMM-Gauss for Diffusion (vbHmmGauss)
+    template  : to build template VB-HMM (vbHmm_template)
+    all       : to build all above
+    [blank]   : same as 'all'
+    clean     : delete binary files
 
 First Step:
   On Unix/Linux terminal, in the directory of source files, type
