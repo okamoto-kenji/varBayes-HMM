@@ -15,9 +15,10 @@
 
 #define DATA_READ_NUMBER 1000
 
-xnDataSet *readTsFretBinary( filename1, filename2, logFP )
+xnDataSet *readTsFretBinary( filename1, filename2, out_name, logFP )
 char *filename1;
 char *filename2;
+char *out_name;
 FILE *logFP;
 {
     FILE *fp;
@@ -83,7 +84,7 @@ FILE *logFP;
     fprintf( logFP, " %d data points read.\n", (int)dlen2-1 );
     free(data);
 
-    xnDataSet *traj = tsFretDataSetFromLongArray( longData1, longData2, dlen1, dlen2, logFP );
+    xnDataSet *traj = tsFretDataSetFromLongArray( longData1, longData2, dlen1, dlen2, out_name, logFP );
 
     free( longData1 );
     free( longData2 );
@@ -91,11 +92,12 @@ FILE *logFP;
 }
 
 
-xnDataSet *tsFretDataSetFromLongArray( longData1, longData2, dlen1, dlen2, logFP )
+xnDataSet *tsFretDataSetFromLongArray( longData1, longData2, dlen1, dlen2, out_name, logFP )
 unsigned long *longData1;
 unsigned long *longData2;
 size_t dlen1;
 size_t dlen2;
+char *out_name;
 FILE *logFP;
 {
     if( (longData1 == NULL)||(longData2==NULL) ){
@@ -109,9 +111,11 @@ FILE *logFP;
         fprintf( logFP, "  frequencies are different:%g/%g\n", freq, freq2);
         return NULL;
     }
-    xnDataSet *x = (xnDataSet*)malloc( sizeof(xnDataSet) );
-    x->data = (tsFretData*)malloc( (dlen1 + dlen2-2) * sizeof( tsFretData ) );
-    tsFretData *data = x->data;
+    xnDataSet *xn = newXnDataSet_tsFret( out_name );
+    tsFretData *d = xn->data;
+    d->dt = (double*)malloc( (dlen1 + dlen2-2) * sizeof(double) );
+//    d->time = (double*)malloc( (dlen1 + dlen2-2) * sizeof(double) );
+    d->ch = (int*)malloc( (dlen1 + dlen2-2) * sizeof(int) );
 
     size_t c1=0, c2=0, c=0, c0=0;   // total counts
     size_t n1=1, n2=1, n=0;         // index for array
@@ -143,14 +147,15 @@ FILE *logFP;
             c2 += longData2[n2];
         }
         
-        data[n].dt = (double)(c - c0)/freq;
-        data[n].time = (double)c/freq;
-        data[n].ch = ch;
+        d->dt[n]   = (double)(c - c0)/freq;
+//        d->time[n] = (double)c/freq;
+        d->ch[n]   = ch;
         c0 = c;
     }
-    x->N = n;
-    x->T = data[n-1].time;
-    fprintf( logFP, "  Total of %u photons, %.3lf seconds read in.\n\n", (unsigned int)n, data[n-1].time);
+    xn->N = n;
+//    d->T = d->time[n-1];
+    d->T = (double)c/freq;
+    fprintf( logFP, "  Total of %u photons, %.3lf seconds read in.\n\n", (unsigned int)xn->N, d->T);
 
-    return x;
+    return xn;
 }

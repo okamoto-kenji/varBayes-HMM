@@ -23,7 +23,7 @@
 
 #include "vbHmmPcFret.h"
 
-xnDataSet *readPcFretBinary( char*, char*, FILE* );
+xnDataSet *readPcFretBinary( char*, char*, char*, FILE* );
 unsigned short *readPcBinary( char*, size_t*, double*, FILE* );
 
 //

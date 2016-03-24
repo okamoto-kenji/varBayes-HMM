@@ -23,7 +23,6 @@
 
 int main( int argc, char *argv[] ){
     
-    char  in_name[255], out_name[255];
     FILE  *logFP = stderr;
     char  logFilename[256];
     time_t  startTime = time((time_t *)NULL);
@@ -58,25 +57,21 @@ int main( int argc, char *argv[] ){
         threshold = atof( argv[5] );
         
         // Set the output filename
-        strncpy( in_name, argv[6], sizeof(in_name) );
-        strncpy( out_name, argv[6], sizeof(out_name) );
-
-        strncpy( logFilename, out_name, sizeof(logFilename) );
+        strncpy( logFilename, argv[6], sizeof(logFilename) );
         strncat( logFilename, ".log", sizeof(logFilename) - strlen(logFilename) - 1 );
         logFP = fopen( logFilename, "w" );
     }
 
     // Prepare data, typically by loading from file(s).
-    xnDataSet *xnWv = readTimeStampBinary( in_name, logFP );
+    xnDataSet *xn = readTimeStampBinary( argv[6], logFP );
 
     // If data can be obtained, execute analysis.
-    if( xnWv != NULL ){
+    if( xn != NULL ){
         setFunctions_ts();
-        int optK = modelComparison( xnWv, sFrom, sTo, trials, maxIteration, threshold, out_name, logFP );
+        int optK = modelComparison( xn, sFrom, sTo, trials, maxIteration, threshold, logFP );
         fprintf( logFP, " No. of state = %d was chosen.\n", optK);
-        
-        free( xnWv->data );
-        free( xnWv );
+
+        freeXnDataSet_ts( &xn );
     }
     
     fprintf( logFP, "FINISH: %d sec. spent.\n", (int)(time((time_t *)NULL) - startTime) );

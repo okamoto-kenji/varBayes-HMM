@@ -253,4 +253,17 @@ $\mathbb{E}\bigl[\ln p({\boldsymbol \pi})\bigr]$, $\mathbb{E}\bigl[\ln p({\bf A}
     \biggr\}  
 \end{align}
 
+
+\subsection{ global analysis 対応 }
+
+M-step と lower bounds の計算で、$N_i$, $M_i$, $N_{ij}$, $\overline{x}_i$, ${\bf S}_i$ をそれぞれ
+\begin{align}
+  N_i^R  =\;&  \sum_{r=1}^R \sum_m^N \overline{z_{mi}^R}  \\
+  M_i^R  =\;&  \sum_j^K N_{ij}^R = \sum_{r=1}^R \sum_{n=2}^{N^{(r)}} \sum_j^K \overline{ z_{n-1, i}^{(r)} z_{nj}^{(r)} }  \\
+  \overline{x}_i^R  =\;&  \frac{1}{N_i^R} \sum_{r=1}^R \sum_m^N \overline{z_{mi}^R} \cdot x_m^R  \\
+  {\bf S}_i^R  =\;&  \frac{1}{N_i^R} \sum_{r=1}^R \sum_{m=1}^N \overline{z_{mi}^R} (x_m^R - \overline{x}_i^R)^2
+\end{align}
+に置き換えて計算すればよい。
+
+
 %

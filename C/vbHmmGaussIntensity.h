@@ -14,16 +14,19 @@
 #ifndef VBHMMGAUSSINT_DEF
 #define VBHMMGAUSSINT_DEF
 
-#include "vbHmm_Common.h"
+#include "gVbHmm_Common.h"
 
 // model-specific data
 typedef struct _gaussIntData {
     double *v;       // value
 } gaussIntData;
 
+xnDataSet *newXnDataSet_gaussInt( const char* );
+void freeXnDataSet_gaussInt( xnDataSet** );
+
 // model-specific parameters
 typedef struct gaussIntParameters_ {
-    int sNo;
+//    int sNo;
     double *uPiArr, sumUPi;
     double **uAMat, *sumUAArr;
     double *avgPi, *avgLnPi;
@@ -31,29 +34,56 @@ typedef struct gaussIntParameters_ {
     double avgMu, avgLm, avgLnLm;
     double uBt, uMu, uA, uB;
     double btMu, aLm, bLm, mu0;
-    double **Nij, *Nii, *Ni, N0, N0i, Nx;
 } gaussIntParameters;
-gaussIntParameters *blankParameters_gaussInt( int );
-void freegaussIntDataSet( xnDataSet* );
+
+void *newModelParameters_gaussInt( xnDataSet*, int );
+void freeModelParameters_gaussInt( void**, xnDataSet*, int );
+
+// model-specific stats variables
+typedef struct _gaussIntStats {
+    double N0, N0i, Nx;
+    double **Nij, *Nii, *Ni;
+} gaussIntStats;
+
+void *newModelStats_gaussInt( xnDataSet*, globalVars*, indVars* );
+void freeModelStats_gaussInt( void**, xnDataSet*, globalVars*, indVars* );
+
+// model-specific stats variables
+typedef struct _gaussIntGlobalStats {
+    double N0R, N0iR, NxR;
+    double **NijR, *NiiR, *NiR, *z1iR;
+} gaussIntGlobalStats;
+
+void *newModelStatsG_gaussInt( xnDataBundle*, globalVars*, indVarBundle* );
+void freeModelStatsG_gaussInt( void**, xnDataBundle*, globalVars*, indVarBundle* );
+
+void initializeVbHmm_gaussInt( xnDataSet*, globalVars*, indVars* );
+void initializeVbHmmG_gaussInt( xnDataBundle*, globalVars*, indVarBundle* );
+void initialize_indVars_gaussInt( xnDataSet*, globalVars*, indVars* );
 
 // model-specific output
-void outputGaussIntResults( vbHmmCommonParameters*, gaussIntParameters*, vbHmmResults*, int, char*, FILE* );
+void outputGaussIntResults( xnDataSet*, globalVars*, indVars*, FILE* );
+void outputGaussIntResultsG( xnDataBundle*, globalVars*, indVarBundle*, FILE* );
 
 // functions required to work with vbHmm_Common
 void setFunctions_gaussInt();
-void **mallocParameterArray_gaussInt( size_t );
-void *initialize_vbHmm_gaussInt( xnDataSet*, vbHmmCommonParameters* );
-void freeParameters_gaussInt( void* );
+void setGFunctions_gaussInt();
+
 
 double pTilde_z1_gaussInt( int, void* );
 double pTilde_zn_zn1_gaussInt( int, int, void* );
 double pTilde_xn_zn_gaussInt( xnDataSet*, size_t, int, void* );
 
-void calcStatsVars_gaussInt( xnDataSet*, vbHmmCommonParameters*, void* );
-void maximization_gaussInt( xnDataSet*, vbHmmCommonParameters*, void* );
-double varLowerBound_gaussInt( xnDataSet*, vbHmmCommonParameters*, void* );
-void reorderParameters_gaussInt( vbHmmCommonParameters*, void* );
-void outputResults_gaussInt( vbHmmCommonParameters*, void*, vbHmmResults*, int, char*, FILE* );
+void calcStatsVars_gaussInt( xnDataSet*, globalVars*, indVars* );
+void calcStatsVarsG_gaussInt( xnDataBundle*, globalVars*, indVarBundle* );
+void maximization_gaussInt( xnDataSet*, globalVars*, indVars* );
+void maximizationG_gaussInt( xnDataBundle*, globalVars*, indVarBundle* );
+double varLowerBound_gaussInt( xnDataSet*, globalVars*, indVars* );
+double varLowerBoundG_gaussInt( xnDataBundle*, globalVars*, indVarBundle* );
+void reorderParameters_gaussInt( xnDataSet*, globalVars*, indVars* );
+void reorderParametersG_gaussInt( xnDataBundle*, globalVars*, indVarBundle* );
+void outputResults_gaussInt( xnDataSet*, globalVars*, indVars*, FILE* );
+void outputResultsG_gaussInt( xnDataBundle*, globalVars*, indVarBundle*, FILE* );
 
 #endif
 

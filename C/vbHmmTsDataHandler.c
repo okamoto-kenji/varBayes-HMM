@@ -51,28 +51,29 @@ FILE *logFP;
         }
         free(data);
         
-        xnDataSet *traj = tsDataSetFromLongArray( longData, dlen, logFP );
-
-        free( longData );        
-        return traj;
+        xnDataSet *xn = NULL;
+        if( longData != NULL ){
+            xn = newXnDataSet_ts( filename );
+            tsDataSetFromLongArray( xn, longData, dlen, logFP );
+        }
+        free( longData );
+        return xn;
     }
 }
 
 
-xnDataSet *tsDataSetFromLongArray( longData, dlen, logFP )
+void tsDataSetFromLongArray( xn, longData, dlen, logFP )
+xnDataSet *xn;
 unsigned long *longData;
 size_t dlen;
 FILE *logFP;
 {
-    if( longData == NULL ){
-        return NULL;
-    }
-    
     double freq = (double)longData[0];
     fprintf( logFP, "  sample freq:%g\n", freq);
-    xnDataSet *x = (xnDataSet*)malloc( sizeof(xnDataSet) );
-    x->data = (tsData*)malloc( (dlen-1) * sizeof( tsData ) );
-    tsData *data = x->data;
+    tsData *d = xn->data;
+    d->dt = (double*)malloc( (dlen-1) * sizeof(double) );
+//    d->time = (double*)malloc( (dlen-1) * sizeof(double) );
+    d->time = NULL;
 
     double dt, T = 0.0;
     size_t count, n;
@@ -81,14 +82,14 @@ FILE *logFP;
         
         dt = (double)count/freq;
         T += dt;
-        data[n-1].dt = dt;
-        data[n-1].time = T;
+        d->dt[n-1] = dt;
+//        d->time[n-1] = T;
     }
-    x->N = n-1;
-    x->T = T;
-    fprintf( logFP, "  Total of %u photons, %.3lf seconds read in.\n\n", (unsigned int)x->N, x->T);
+    xn->N = n-1;
+    d->T = T;
+    fprintf( logFP, "  Total of %u photons, %.3lf seconds read in.\n\n", (unsigned int)xn->N, d->T);
     
-    return x;
+    return;
 }
 
 //

@@ -57,8 +57,7 @@
 \intertext{後で得られる $\mu_{0}$, $\beta^\mu$, $a^\lambda$, $b^\lambda$ を使って}
 %
   =& \prod_i^K \Biggl\{  
-     \frac{1}{\sqrt{2 \pi i}}  \notag  \\  
-   &  \times  \exp\biggl( \frac {1}{2}  \biggl[  \overline{\ln\lambda} - \frac{i}{\beta^\mu}  
+     \frac{1}{\sqrt{2 \pi i}}  \exp\biggl( \frac {1}{2}  \biggl[  \overline{\ln\lambda} - \frac{i}{\beta^\mu}  
        - \frac{a^\lambda}{b^\lambda} \frac{ \left( x_m - i \mu_{0} \right)^2 }{i} 
      \biggr] \biggr) \Biggr\}^{z_{mi}}  
 \end{align}
@@ -100,19 +99,15 @@ $\ln q^*(\mu, \lambda)$ は $\ln q^*(\mu | \lambda) + \ln q^*(\lambda)$ と書�
   =&  - \frac{\lambda}{2} \left(u^\beta + \sum_{i=1}^K i \sum_{m=1}^N \overline{z_{mi}} \right) \mu^2  \notag  \\  
     &  + \lambda  \left( u^\beta u^\mu + \sum_{i=1}^K \sum_{m=1}^N \overline{z_{mi}} x_m \right) \mu + {\rm const.}  \\
 %
-\intertext{}
+%  =&  - \frac{\lambda}{2} \left(u^\beta + \sum_{i=1}^K i N_i \right) \mu^2  
+%  + \lambda  \left( u^\beta u^\mu + N_x \right) \mu  + {\rm const.}  \\
 %
-  =&  - \frac{\lambda}{2} \left(u^\beta + \sum_{i=1}^K i N_i \right) \mu^2  
-  + \lambda  \left( u^\beta u^\mu + \sum_{i=1}^K N_i \overline{x}_i \right) \mu  \notag  \\  
-    &  + {\rm const.}  \\
-%
-  =&  - \frac{\lambda}{2} \left(u^\beta + N_0^i \right) {\mu}^2  
-  + \lambda  \left( u^\beta u^\mu + N_0 \overline{x}_0 \right) \mu + {\rm const.}  
+  =&  - \frac{\lambda}{2} \left( u^\beta + N_0^i \right) {\mu}^2  
+  + \lambda  \left( u^\beta u^\mu + N_x \right) \mu + {\rm const.}  
 %
 \intertext{ただし、}
   N_i =& \sum_{m=1}^N \overline{z_{mi}}  \\
   N_0^i =& \sum_{i=1}^K i N_i  \\
-  N_0 =& \sum_{i=1}^K N_i  \\
   N_x =& \sum_{i=1}^K \sum_{m=1}^N \overline{z_{mi}} x_m  
 \end{align}
 %
@@ -149,7 +144,7 @@ $q^*(\lambda)$ に関しては、
 ただし、
 \begin{align}
   a^\lambda  =&  u^a + \frac{1}{2} \mathbb{E}_{\bf Z}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} \right]  \\
-  =&  u^a + \frac{N_0}{2}  \\
+  =&  u^a + \frac{N}{2}  \\
 %%%%
   b^\lambda  =&  u^b + \frac{1}{2} \mathbb{E}_{\bf Z}\left[ \sum_{i=1}^K \sum_{m=1}^N z_{mi} \frac{\left( x_m - i \mu \right)^2}{i} \right]  + \frac{u^\beta}{2} \left( \mu - u^\mu \right)^2  \notag  \\  
     &  - \frac{\beta^\mu}{2} \left( \mu - \mu_{0} \right)^2  \\
@@ -170,14 +165,14 @@ $q^*(\lambda)$ に関しては、
   =&  u^b + \frac{1}{2} \left\{  
       \sum_{i=1}^K \sum_{m=1}^N \frac{ \overline{z_{mi}} {x_m}^2}{i}  -  2 N_x \mu  +  N_0^i \mu^2  \right\}  \notag  \\  
     &  - \frac{N_0^i}{2} \mu^2  + ( \beta^\mu \mu_0 - u^\beta u^\mu ) \mu
-    + \frac{u^\beta}{2} {u^\mu}^2 - \frac{u^\beta + N_0^i}{2} {\mu_{0}}^2  \\
+    + \frac{u^\beta}{2} {u^\mu}^2 - \frac{\beta^\mu}{2} {\mu_{0}}^2  \\
 %
   =&  u^b + \frac{1}{2} \sum_{i=1}^K \sum_{m=1}^N \frac{ \overline{z_{mi}} {x_m}^2}{i}  
       +  \left\{ (u^\beta u^\mu + N_x) - u^\beta u^\mu - N_x \right\} \mu  \notag  \\  
-    &  + \frac{u^\beta}{2} {u^\mu}^2 - \frac{u^\beta + N_0^i}{2} {\mu_{0}}^2  \\
+    &  + \frac{u^\beta}{2} {u^\mu}^2 - \frac{\beta^\mu}{2} {\mu_{0}}^2  \\
 %
   =&  u^b + \frac{1}{2} \sum_{i=1}^K \sum_{m=1}^N \frac{ \overline{z_{mi}} {x_m}^2}{i}  
-    + \frac{u^\beta}{2} {u^\mu}^2 - \frac{u^\beta + N_0^i}{2} {\mu_{0}}^2  
+    + \frac{u^\beta}{2} {u^\mu}^2 - \frac{\beta^\mu}{2} {\mu_{0}}^2  
 \end{align}
 
 これら $\mu_{0}$, $\beta^\mu$, $a^\lambda$, $b^\lambda$ を使って Gauss-Gamma 分布 (\ref{eqn:gaussGammaDist}) として、
@@ -192,7 +187,7 @@ $q^*(\lambda)$ に関しては、
   \overline{\lambda}  =&  \frac{a^\lambda}{b^\lambda}  \\
   \overline{\ln \lambda}  =&  \psi(a^\lambda) - \ln b^\lambda  \\
   \overline{\lambda (x - {\mu})^2}  =&  \frac{1}{\beta^\mu} + \frac{a^\lambda}{b^\lambda} (x - \mu_{0})^2  \\  
-  \overline{\lambda (x - i {\mu})^2}  =&  \frac{i^2}{\beta^\mu} + \frac{a^\lambda}{b^\lambda} (x - \mu_{0})^2  
+  \overline{\lambda (x - i {\mu})^2}  =&  \frac{i^2}{\beta^\mu} + \frac{a^\lambda}{b^\lambda} (x - i \mu_{0})^2  
 \end{align}
 が得られる。
 

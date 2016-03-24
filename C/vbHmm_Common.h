@@ -18,79 +18,84 @@
 #include <stdlib.h>
 #include <math.h>
 
-// Structure encapsulating data to analyze
-typedef struct _xnDataSet {
-    size_t N;                       // number of data points
-    double T;                       // total length of data (may not be always necessary)
-    void *data;                     // an array conatining data points (arbitrary format)
-} xnDataSet;
+typedef struct _individualDataVariables{    // variables for individual trajectories
+    // stats
+    double **gmMat;                     // gamma matrix for E-step
+    double ***xiMat;                    // xi matrix for E-step
+    double **aMat;                      // alpha matrix for Baum-Welch
+    double **bMat;                      // beta matrix for Baum-Welch
+    double *cn;                         // scaling factor for Baum-Welch
+    double **valpZnZn1, **valpXnZn;     // temporary storage of calculation to save time
+    void *stats;
 
-// Commonly used parameters
-typedef struct _vbHmmCommonParameters {
-    size_t dLen;                    // number of data points
-    int sNo;                        // number of states
-    
-    double **gmMat;                 // gamma matrix for E-step
-    double ***xiMat;                // xi matrix for E-step
-    double **aMat;                  // alpha matrix for Baum-Welch
-    double **bMat;                  // beta matrix for Baum-Welch
-    double *cn;                     // scaling factor for Baum-Welch
-    
-    double **valpZnZn1, **valpXnZn; // temporary storage of calculation to save time
-} vbHmmCommonParameters;
+    // results
+    int *stateTraj;
+} indVars;
 
-// Results of analysis
-typedef struct _vbHmmResults {
+typedef struct _globalVariables{        // global variables
+    // parameters
+    int sNo;
+    void *params;
+
+    // results
     size_t iteration;               // calculation steps
     double maxLq;                   // final lower bound
     double *LqArr;                  // time series of lower bound
-    int *maxSumTraj;                // resulting state transition trajectory
-} vbHmmResults;
+} globalVars;
+
+
+// Structure encapsulating data to analyze
+typedef struct _xnDataSet {
+    char *name;
+    size_t N;                       // number of data points
+    void *data;                     // an array conatining data points (arbitrary format)
+} xnDataSet;
 
 
 // manages the VB-HMM engine to choose likeliest model
-int modelComparison( xnDataSet*, int, int, int, int, double, char*, FILE* );
+int modelComparison( xnDataSet*, int, int, int, int, double, FILE* );
 
 
 //// Core Engines for VB-HMM
 // common functions to manage peripheral data
-vbHmmCommonParameters *initialize_Common( xnDataSet*, int );
-void freeCommonParameters( vbHmmCommonParameters* );
-vbHmmResults *newResults();
-void freeResults( vbHmmResults* );
+globalVars *newGlobalVars( xnDataSet*, int );
+void freeGlobalVars( xnDataSet*, globalVars** );
+indVars *newIndVars( xnDataSet*, globalVars* );
+void freeIndVars( xnDataSet*, globalVars*, indVars** );
 // main routine of VB-HMM
-double vbHmm_Main( xnDataSet*, vbHmmCommonParameters*, void*, vbHmmResults* ,int ,double, FILE* );
+double vbHmm_Main( xnDataSet*, globalVars*, indVars* ,int ,double, FILE* );
 // Baum-Welch algorithm
-void forwardBackward( xnDataSet*, vbHmmCommonParameters*, void* );
+void forwardBackward( xnDataSet*, globalVars*, indVars* );
 // Viterbi algorithm
-int *maxSum( xnDataSet*, vbHmmCommonParameters*, void*, int** );
+int *maxSum( xnDataSet*, globalVars*, indVars* );
 
 
 //// functions to be implemented in model-specific sources
 // to manage data
-typedef void **(*mallocParameterArray_func)( size_t );
-typedef void *(*initialize_vbHmm_func)( xnDataSet*, vbHmmCommonParameters* );
-typedef void (*freeParameters_func)( void* );
+typedef void *(*new_model_parameters_func)( xnDataSet*, int );
+typedef void (*free_model_parameters_func)( void**, xnDataSet*, int );
+typedef void *(*new_model_stats_func)( xnDataSet*, globalVars*, indVars* );
+typedef void (*free_model_stats_func)( void**, xnDataSet*, globalVars*, indVars* );
+typedef void (*initialize_vbHmm_func)( xnDataSet*, globalVars*, indVars* );
 // for E-step calculation
 typedef double (*pTilde_z1_func)( int, void* );
 typedef double (*pTilde_zn_zn1_func)( int, int, void* );
 typedef double (*pTilde_xn_zn_func)( xnDataSet*, size_t, int, void* );
 // for M-step calculation
-typedef void (*calcStatsVars_func)( xnDataSet*, vbHmmCommonParameters*, void* );
-typedef void (*maximization_func)( xnDataSet*, vbHmmCommonParameters*, void* );
+typedef void (*calcStatsVars_func)( xnDataSet*, globalVars*, indVars* );
+typedef void (*maximization_func)( xnDataSet*, globalVars*, indVars* );
 // calculates the Variational Lower Bound
-typedef double (*varLowerBound_func)( xnDataSet*, vbHmmCommonParameters*, void* );
+typedef double (*varLowerBound_func)( xnDataSet*, globalVars*, indVars* );
 // to manage & output results
-typedef void (*reorderParameters_func)( vbHmmCommonParameters*, void* );
-typedef void (*outputResults_func)( vbHmmCommonParameters*, void*, vbHmmResults*, int, char*, FILE* );
-// for stats simulation
-typedef void *(*duplicateParameters_func)( void * );
-typedef double (*calcAccuracyFromResult_func)( xnDataSet*, vbHmmResults* );
+typedef void (*reorderParameters_func)( xnDataSet*, globalVars*, indVars* );
+typedef void (*outputResults_func)( xnDataSet*, globalVars*, indVars*, FILE* );
 // function pointers
 typedef struct _commonFunctions{
-    mallocParameterArray_func  mallocParameterArray;
-    initialize_vbHmm_func      initialize_vbHmm;
-    freeParameters_func        freeParameters;
+    new_model_parameters_func  newModelParameters;
+    free_model_parameters_func freeModelParameters;
+    new_model_stats_func       newModelStats;
+    free_model_stats_func      freeModelStats;
+    initialize_vbHmm_func      initializeVbHmm;
     pTilde_z1_func             pTilde_z1;
     pTilde_zn_zn1_func         pTilde_zn_zn1;
     pTilde_xn_zn_func          pTilde_xn_zn;

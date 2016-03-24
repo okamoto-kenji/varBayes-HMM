@@ -16,47 +16,72 @@
 #ifndef VBHMMTEMPLATE_DEF
 #define VBHMMTEMPLATE_DEF
 
-// Include common VB-HMM engine.
-#include "vbHmm_Common.h"
+// Include common global VB-HMM engine.
+#include "gVbHmm_Common.h"
 
-#define  SIMU_STATS
+// Define variables to describe model-specific data.
+typedef struct _tempData {
+} tempData;
 
-int modelComparison__( xnDataSet*, int, int, int, int, double, char*, FILE* );
+xnDataSet *newXnDataSet__( const char* );
+void freeXnDataSet__( xnDataSet** );
 
-// Specify variables to describe each data point.
-typedef struct _dataStruct {
-} dataStruct;
-
-typedef struct _parametersStruct {
-    // Assumed number of state is kept for convenience.
-    int sNo;
+// model-specific parameters
+typedef struct _tempParameters {
     // Define model specific parameters here.
     // For example, average and log average of parameters,
+    double *avgPi, *avgLnPi;
+    double **avgA, **avgLnA;
     //   hyperparameter for prior distributions.
-} parametersStruct;
+    double *uPiArr, sumUPi;
+    double **uAMat, *sumUAArr;
+} tempParameters;
 
-parametersStruct *blankParameters( int );
-void output__Results( vbHmmCommonParameters*, parametersStruct*, vbHmmResults*, int, char*, FILE* );
+void *newModelParameters__( xnDataSet*, int );
+void freeModelParameters__( void**, xnDataSet*, int );
 
+// model-specific stats variables
+typedef struct _tempStats {
+    double **Nij, *Nii, *Ni;
+} tempStats;
+
+void *newModelStats__( xnDataSet*, globalVars*, indVars* );
+void freeModelStats__( void**, xnDataSet*, globalVars*, indVars* );
+
+// model-specific stats variables
+typedef struct _tempGlobalStats {
+    double **NijR, *NiiR, *NiR, *z1iR;
+} tempGlobalStats;
+
+void *newModelStatsG__( xnDataBundle*, globalVars*, indVarBundle* );
+void freeModelStatsG__( void**, xnDataBundle*, globalVars*, indVarBundle* );
+
+void initializeVbHmm__( xnDataSet*, globalVars*, indVars* );
+void initializeVbHmmG__( xnDataBundle*, globalVars*, indVarBundle* );
+void initialize_indVars__( xnDataSet*, globalVars*, indVars* );
+
+// model-specific output
+void output__Results( xnDataSet*, globalVars*, indVars*, FILE* );
+void output__ResultsG( xnDataBundle*, globalVars*, indVarBundle*, FILE* );
 
 // functions required to work with vbHmm_Common
 void setFunctions__();
-void **mallocParameterArray__( size_t );
-void *initialize_vbHmm__( xnDataSet*, vbHmmCommonParameters* );
-void freeParameters__( void* );
+void setGFunctions__();
 
-double p_z1__( int, void* );
 double pTilde_z1__( int, void* );
-double p_zn_zn1__( int, int, void* );
 double pTilde_zn_zn1__( int, int, void* );
-double p_xn_zn__( xnDataSet*, size_t, int, void* );
 double pTilde_xn_zn__( xnDataSet*, size_t, int, void* );
 
-void calcStatsVars__( xnDataSet*, vbHmmCommonParameters*, void* );
-void maximization__( xnDataSet*, vbHmmCommonParameters*, void* );
-double varLowerBound__( xnDataSet*, vbHmmCommonParameters*, void* );
-void reorderParameters__( vbHmmCommonParameters*, void* );
-void outputResults__( vbHmmCommonParameters*, void*, vbHmmResults*, int, char*, FILE* );
+void calcStatsVars__( xnDataSet*, globalVars*, indVars* );
+void calcStatsVarsG__( xnDataBundle*, globalVars*, indVarBundle* );
+void maximization__( xnDataSet*, globalVars*, indVars* );
+void maximizationG__( xnDataBundle*, globalVars*, indVarBundle* );
+double varLowerBound__( xnDataSet*, globalVars*, indVars* );
+double varLowerBoundG__( xnDataBundle*, globalVars*, indVarBundle* );
+void reorderParameters__( xnDataSet*, globalVars*, indVars* );
+void reorderParametersG__( xnDataBundle*, globalVars*, indVarBundle* );
+void outputResults__( xnDataSet*, globalVars*, indVars*, FILE* );
+void outputResultsG__( xnDataBundle*, globalVars*, indVarBundle*, FILE* );
 
 #endif
 

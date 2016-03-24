@@ -114,71 +114,10 @@ $\phi$ に関しては、$p( x_n | {\bf z}_n )$ の関数形に依存する。
 
 変分下限 ${\cal L}(q)$ の計算において、${\bf Z}, \theta$ が独立であると見なせる場合、式 (\ref{eqn:vbLqExpectation}) は、
 \begin{align}
-  {\cal L}(q)  = &  \mathbb{E}\bigl[\ln p(\theta) \bigr] - \mathbb{E}\bigl[\ln q(\theta) \bigr] + \mathbb{E}\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] - \mathbb{E}\bigl[\ln q( {\bf Z} ) \bigr]  \label{eqn:vbHmmGenericLq}  
+  {\cal L}(q)  =&  \mathbb{E}\bigl[\ln p(\theta) \bigr] - \mathbb{E}\bigl[\ln q(\theta) \bigr] + \mathbb{E}\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] - \mathbb{E}\bigl[\ln q( {\bf Z} ) \bigr]  \label{eqn:vbHmmGenericLq}  \\
+    =&  \mathbb{E}\bigl[\ln p(\theta) \bigr] - \mathbb{E}\bigl[\ln q(\theta) \bigr] + \sum_{n=1}^N \ln \tilde{c}_n  \label{eqn:vbHmmSimplidiedLq}  
 \end{align}
-と書き直すことが出来る。
-
-\
-
-このとき、下限値 ${\cal L}(q)$ は $q({\bf Z})$ に関して最適化されているはずであり、停留条件
-\begin{equation}
-  \frac{ \delta {\cal L}(q) }{ \delta q({\bf Z}) } = 0
-\end{equation}
-を満たすはずである。
-ただし、$\frac{ \delta f(y) }{ \delta y(x) }$ は、汎関数 $f$ の関数 $y$ についての汎関数微分。
-\begin{align}
-  \frac{ \delta {\cal L}(q) }{ \delta q({\bf Z}) }  =&  \frac{ \delta }{ \delta q({\bf Z}) } \sum_{\bf z} \int d\theta \; q(\theta) q({\bf Z}) \ln \left\{ \frac{ p(\theta) p( {\bf X}, {\bf Z} | \theta ) }{ q(\theta) q({\bf Z}) } \right\}  \\
-%
-    =&  \frac{ \delta }{ \delta q({\bf Z}) } \int d\theta \; q(\theta) \sum_{\bf z} q({\bf Z}) \left[ \ln \left\{ \frac{ p(\theta) }{ q({\theta}) } \right\}  + \ln \left\{ \frac{ p( {\bf X}, {\bf Z} | \theta ) }{ q({\bf Z}) } \right\} \right]  
-%
-\intertext{ 第１項に関しては、
-$\displaystyle \frac{ \delta }{ \delta q({\bf Z}) } \left[ \int d\theta \; q(\theta) \ln \left\{ \frac{ p(\theta) }{ q({\theta}) } \right\} \right] = 0 $
-なので、第２項のみ考えればよく、 }
-%
-    =&  \int d\theta \; q(\theta) \frac{ \delta }{ \delta q({\bf Z}) } \sum_{\bf z} q({\bf Z}) \bigl\{ \ln p( {\bf X}, {\bf Z} | \theta ) - \ln q({\bf Z}) \bigr\}  \\
-%
-    =&  \int d\theta \; q(\theta) \biggl[ 1 \times \bigl\{ \ln p( {\bf X}, {\bf Z} | \theta ) - \ln q({\bf Z}) \bigr\}  \notag  \\  
-    &  + q({\bf Z}) \times \left\{ 0 - \frac{ 1 }{ q({\bf Z}) } \right\} \biggr]  \\
-%
-    =&  \int d\theta \; q(\theta) \bigl\{ \ln p( {\bf X}, {\bf Z} | \theta ) - \ln q({\bf Z}) - 1 \bigr\}  \\
-%
-    =&  \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] - \ln q({\bf Z}) - 1  \\
-%
-    =&  0
-\end{align}
-したがって、
-\begin{align}
-  \ln q({\bf Z})  =&  \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] - 1 + {\rm const.}  \\
-  q({\bf Z})  &\propto  \exp\left( \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] \right)
-\end{align}
-$q({\bf Z})$ の ${\bf z}$ での積分を計算すると、
-\begin{align}
-  & \; \sum_{\bf z} \exp\left( \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] \right)  \\
-%
-    =& \; \sum_{\bf z} \exp\left\{ \ln \tilde{p}({\bf z}_1) + \sum_{n=2}^N \ln \tilde{p}({\bf z}_n | {\bf z}_{n-1}) + \sum_{m=1}^N \ln \tilde{p}(x_m | {\bf z}_m) \right\}  \\
-%
-    =& \; \sum_{\bf z} \tilde{p}({\bf z}_1) \cdot \prod_{n=2}^N \ln \tilde{p}({\bf z}_n | {\bf z}_{n-1}) \cdot \prod_{m=1}^N \ln \tilde{p}(x_m | {\bf z}_m)  \\
-%
-    =& \; \sum_{\bf z}  \tilde{p}({\bf Z}) \tilde{p}({\bf X} | {\bf Z})  \\
-%
-    =& \; \tilde{p}({\bf X})  \\
-%
-    =& \; \prod_{n=1}^N \tilde{c}_n
-\end{align}
-が得られるので、$q({\bf Z})$ を規格化できて、
-\begin{align}
-  q({\bf Z})  =&  \left( \prod_{n=1}^N \tilde{c}_n \right)^{-1} \exp\left( \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] \right)  \\
-%
-  \ln q({\bf Z})  =&  \mathbb{E}_\theta\bigl[\ln p({\bf X}, {\bf Z} | \theta) \bigr] - \sum_{n=1}^N \ln \tilde{c}_n  
-\end{align}
-となる。
 ただし $\tilde{c}_n$ は、$\tilde{p}({\bf z}_1)$, $\tilde{p}({\bf z}_n | {\bf z}_{n-1})$, $\tilde{p}(x_m | {\bf z}_m)$ を用いて $\alpha$-$\beta$ アルゴリズムを実行した際に得られるスケーリング係数であり、E-step の計算過程で既に得られている。
-
-この関係を用いると、式 (\ref{eqn:vbHmmGenericLq}) は、
-\begin{equation}
-  {\cal L}(q)  =  \mathbb{E}\bigl[\ln p(\theta) \bigr] - \mathbb{E}\bigl[\ln q(\theta) \bigr] + \sum_{n=1}^N \ln \tilde{c}_n  \label{eqn:vbHmmSimplidiedLq}  
-\end{equation}
-と書き直すことが出来る。
 
 \
 

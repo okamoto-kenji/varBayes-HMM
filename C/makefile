@@ -13,16 +13,16 @@ pcFretProg = vbHmmPcFret
 pcFretObjs = vbHmmPcFret_Main.o vbHmm_Common.o vbHmmPcFret.o vbHmmPcFretDataHandler.o rand.o
 
 gaussProg = vbHmmGauss
-gaussObjs = vbHmmGauss_Main.o vbHmm_Common.o vbHmmGauss.o vbHmmGaussDataHandler.o rand.o
+gaussObjs = vbHmmGauss_Main.o vbHmm_Common.o gVbHmm_Common.o vbHmmGauss.o vbHmmGaussDataHandler.o rand.o
 
 gaussIntProg = vbHmmGaussInt
-gaussIntObjs = vbHmmGaussIntensity_Main.o vbHmm_Common.o vbHmmGaussIntensity.o vbHmmGaussIntensityDataHandler.o rand.o
+gaussIntObjs = vbHmmGaussIntensity_Main.o vbHmm_Common.o gVbHmm_Common.o vbHmmGaussIntensity.o vbHmmGaussIntensityDataHandler.o rand.o
 
 gaussDiffProg = vbHmmGaussDiff
-gaussDiffObjs = vbHmmGaussDiffusion_Main.o vbHmm_Common.o vbHmmGaussDiffusion.o vbHmmGaussDiffusionDataHandler.o rand.o
+gaussDiffObjs = vbHmmGaussDiffusion_Main.o vbHmm_Common.o gVbHmm_Common.o vbHmmGaussDiffusion.o vbHmmGaussDiffusionDataHandler.o rand.o
 
 tempProg = vbHmm_template
-tempObjs = vbHmm_template_Main.o vbHmm_Common.o vbHmm_template.o vbHmm_Template_DataHandler.o rand.o
+tempObjs = vbHmm_template_Main.o vbHmm_Common.o gVbHmm_Common.o vbHmm_template.o vbHmm_Template_DataHandler.o rand.o
 
 ## Compiler dependent variables
 ## Uncomment either 3 lines below
@@ -51,7 +51,7 @@ ts : $(tsProg)
 $(tsProg) : $(tsObjs)
 	$(CC) $^ $(LDFLAGS) -o $(tsProg)
 
-fret : $(tsFretProg)
+tsFret : $(tsFretProg)
 $(tsFretProg) : $(tsFretObjs)
 	$(CC) $^ $(LDFLAGS) -o $(tsFretProg)
 
@@ -105,20 +105,20 @@ vbHmmPcFret.o            : vbHmm_Common.h vbHmmPcFret.h rand.h
 vbHmmPcFret_Main.o       : vbHmm_Common.h vbHmmPcFret.h vbHmmPcFretDataHandler.h vbHmmPcFret_Main.h
 vbHmmPcFretDataHandler.o : vbHmm_Common.h vbHmmPcFret.h vbHmmPcFretDataHandler.h
 
-vbHmmGauss.o            : vbHmm_Common.h vbHmmGauss.h rand.h
-vbHmmGauss_Main.o       : vbHmm_Common.h vbHmmGauss.h vbHmmGaussDataHandler.h vbHmmGauss_Main.h
-vbHmmGaussDataHandler.o : vbHmm_Common.h vbHmmGauss.h vbHmmGaussDataHandler.h
+vbHmmGauss.o            : vbHmm_Common.h gVbHmm_Common.h vbHmmGauss.h rand.h
+vbHmmGauss_Main.o       : vbHmm_Common.h gVbHmm_Common.h vbHmmGauss.h vbHmmGaussDataHandler.h vbHmmGauss_Main.h
+vbHmmGaussDataHandler.o : vbHmm_Common.h gVbHmm_Common.h vbHmmGauss.h vbHmmGaussDataHandler.h
 
-vbHmmGaussIntensity.o            : vbHmm_Common.h vbHmmGaussIntensity.h rand.h
-vbHmmGaussIntensity_Main.o       : vbHmm_Common.h vbHmmGaussIntensity.h vbHmmGaussIntensityDataHandler.h vbHmmGaussIntensity_Main.h
-vbHmmGaussIntensityDataHandler.o : vbHmm_Common.h vbHmmGaussIntensity.h vbHmmGaussIntensityDataHandler.h
+vbHmmGaussIntensity.o            : vbHmm_Common.h gVbHmm_Common.h vbHmmGaussIntensity.h rand.h
+vbHmmGaussIntensity_Main.o       : vbHmm_Common.h gVbHmm_Common.h vbHmmGaussIntensity.h vbHmmGaussIntensityDataHandler.h vbHmmGaussIntensity_Main.h
+vbHmmGaussIntensityDataHandler.o : vbHmm_Common.h gVbHmm_Common.h vbHmmGaussIntensity.h vbHmmGaussIntensityDataHandler.h
 
-vbHmmGaussDiffusion.o            : vbHmm_Common.h vbHmmGaussDiffusion.h rand.h
-vbHmmGaussDiffusion_Main.o       : vbHmm_Common.h vbHmmGaussDiffusion.h vbHmmGaussDiffusionDataHandler.h vbHmmGaussDiffusion_Main.h
-vbHmmGaussDiffusionDataHandler.o : vbHmm_Common.h vbHmmGaussDiffusion.h vbHmmGaussDiffusionDataHandler.h
+vbHmmGaussDiffusion.o            : vbHmm_Common.h gVbHmm_Common.h vbHmmGaussDiffusion.h rand.h
+vbHmmGaussDiffusion_Main.o       : vbHmm_Common.h gVbHmm_Common.h vbHmmGaussDiffusion.h vbHmmGaussDiffusionDataHandler.h vbHmmGaussDiffusion_Main.h
+vbHmmGaussDiffusionDataHandler.o : vbHmm_Common.h gVbHmm_Common.h vbHmmGaussDiffusion.h vbHmmGaussDiffusionDataHandler.h
 
-vbHmm_template.o             : vbHmm_Common.h vbHmm_template.h rand.h
-vbHmm_template_Main.o        : vbHmm_Common.h vbHmm_template.h vbHmm_Template_DataHandler.h vbHmm_template_Main.h
-vbHmm_Template_DataHandler.o : vbHmm_Common.h vbHmm_template.h vbHmm_Template_DataHandler.h
+vbHmm_template.o             : vbHmm_Common.h gVbHmm_Common.h vbHmm_template.h rand.h
+vbHmm_template_Main.o        : vbHmm_Common.h gVbHmm_Common.h vbHmm_template.h vbHmm_Template_DataHandler.h vbHmm_template_Main.h
+vbHmm_Template_DataHandler.o : vbHmm_Common.h gVbHmm_Common.h vbHmm_template.h vbHmm_Template_DataHandler.h
 
 #

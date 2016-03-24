@@ -53,11 +53,10 @@ FILE *logFP;
 
     double acqTime= (shortData[0]*65536 + shortData[1]) * 1.0e-9;
 
-    xnDataSet *traj = (xnDataSet*)malloc( sizeof(xnDataSet) );
-    traj->N = dlen - 2;
-    traj->T = acqTime * traj->N;
-    traj->data = (pcData*)malloc( sizeof( pcData ) );
-    pcData *pc = traj->data;
+    xnDataSet *xn = newXnDataSet_pc( filename );
+    xn->N = dlen - 2;
+    xn->data = (pcData*)malloc( sizeof( pcData ) );
+    pcData *pc = xn->data;
     pc->binSize = acqTime;
     pc->counts = (unsigned int*)malloc( (dlen-2) * sizeof(unsigned int) );
 #ifdef SIMU_STATS
@@ -68,10 +67,10 @@ FILE *logFP;
     for( i = 2 ; i < dlen ; i++ ){
         pc->counts[i-2] = shortData[i];
     }
-    fprintf( logFP, "  Total of %u bins, %.3lf seconds read in.\n\n", (unsigned int)traj->N, traj->T);
+    fprintf( logFP, "  Total of %u bins, %.3lf seconds read in.\n\n", (unsigned int)xn->N, pc->binSize * xn->N);
 
     free( shortData );        
-    return traj;
+    return xn;
 }
 
 

@@ -24,6 +24,6 @@
 #include "vbHmmTs.h"
 
 xnDataSet *readTimeStampBinary( char*, FILE* );
-xnDataSet *tsDataSetFromLongArray( unsigned long*, size_t, FILE* );
+void tsDataSetFromLongArray( xnDataSet*, unsigned long*, size_t, FILE* );
 
 //

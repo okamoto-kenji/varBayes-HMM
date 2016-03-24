@@ -19,44 +19,47 @@
 
 
 // Pointers of functions to call model-specific functions.
-static mallocParameterArray_func  mallocParameterArray  = NULL;
-static initialize_vbHmm_func      initialize_vbHmm      = NULL;
-static freeParameters_func        freeParameters        = NULL;
-static pTilde_z1_func             pTilde_z1             = NULL;
-static pTilde_zn_zn1_func         pTilde_zn_zn1         = NULL;
-static pTilde_xn_zn_func          pTilde_xn_zn          = NULL;
-static calcStatsVars_func         calcStatsVars         = NULL;
-static maximization_func          maximization          = NULL;
-static varLowerBound_func         varLowerBound         = NULL;
-static reorderParameters_func     reorderParameters     = NULL;
-static outputResults_func         outputResults         = NULL;
+new_model_parameters_func  newModelParameters    = NULL;
+free_model_parameters_func freeModelParameters   = NULL;
+new_model_stats_func       newModelStats         = NULL;
+free_model_stats_func      freeModelStats        = NULL;
+initialize_vbHmm_func      initializeVbHmm       = NULL;
+pTilde_z1_func             pTilde_z1             = NULL;
+pTilde_zn_zn1_func         pTilde_zn_zn1         = NULL;
+pTilde_xn_zn_func          pTilde_xn_zn          = NULL;
+calcStatsVars_func         calcStatsVars         = NULL;
+maximization_func          maximization          = NULL;
+varLowerBound_func         varLowerBound         = NULL;
+reorderParameters_func     reorderParameters     = NULL;
+outputResults_func         outputResults         = NULL;
 
 
 // This function must be called to connect with the model before executing analysis.
 void setFunctions( funcs )
 commonFunctions funcs;
 {
-    mallocParameterArray = funcs.mallocParameterArray;
-    initialize_vbHmm = funcs.initialize_vbHmm;
-    freeParameters = funcs.freeParameters;
-    pTilde_z1 = funcs.pTilde_z1;
-    pTilde_zn_zn1 = funcs.pTilde_zn_zn1;
-    pTilde_xn_zn = funcs.pTilde_xn_zn;
-    calcStatsVars = funcs.calcStatsVars;
-    maximization = funcs.maximization;
-    varLowerBound = funcs.varLowerBound;
-    reorderParameters = funcs.reorderParameters;
-    outputResults = funcs.outputResults;
+    newModelParameters      = funcs.newModelParameters;
+    freeModelParameters     = funcs.freeModelParameters;
+    newModelStats           = funcs.newModelStats;
+    freeModelStats          = funcs.freeModelStats;
+    initializeVbHmm         = funcs.initializeVbHmm;
+    pTilde_z1               = funcs.pTilde_z1;
+    pTilde_zn_zn1           = funcs.pTilde_zn_zn1;
+    pTilde_xn_zn            = funcs.pTilde_xn_zn;
+    calcStatsVars           = funcs.calcStatsVars;
+    maximization            = funcs.maximization;
+    varLowerBound           = funcs.varLowerBound;
+    reorderParameters       = funcs.reorderParameters;
+    outputResults           = funcs.outputResults;
 }
 
 
 //////////////////////////////////////////////////////////////////  VB-HMM Execution Functions
-int modelComparison( xnWv, sFrom, sTo, trials, maxIteration, threshold, out_name, logFP )
-xnDataSet *xnWv;
+int modelComparison( xn, sFrom, sTo, trials, maxIteration, threshold, logFP )
+xnDataSet *xn;
 int sFrom, sTo, trials;
 int maxIteration;
 double threshold;
-char *out_name;
 FILE *logFP;
 {
     int s, t;
@@ -69,20 +72,18 @@ FILE *logFP;
 
     int maxS = 0;
     double maxLq = -DBL_MAX;
-    vbHmmResults **resArray = (vbHmmResults**)malloc( trials * sizeof(vbHmmResults*) );
-    vbHmmCommonParameters **cParArray = (vbHmmCommonParameters**)malloc( trials * sizeof(vbHmmCommonParameters*) );
-    void **parArray = (*mallocParameterArray)( trials );
+    globalVars **gvArray = (globalVars**)malloc( trials * sizeof(globalVars*) );
+    indVars **ivArray = (indVars**)malloc( trials * sizeof(indVars*) );
     for( s = sFrom ; s <= sTo ; s++ ){
 #ifdef _OPENMP
 #pragma omp parallel for private(t)
 #endif
         for( t = 0 ; t < trials ; t++ ){
             int st = (s - sFrom) * trials + t;
-            resArray[t] = newResults();
-            cParArray[t] = initialize_Common( xnWv, s );
-            parArray[t] = (*initialize_vbHmm)( xnWv, cParArray[t] );
+            gvArray[t] = newGlobalVars( xn, s );
+            ivArray[t] = newIndVars( xn, gvArray[t] );
             
-            LqVsK[st] = vbHmm_Main( xnWv, cParArray[t], parArray[t], resArray[t], maxIteration, threshold, logFP );
+            LqVsK[st] = vbHmm_Main( xn, gvArray[t], ivArray[t], maxIteration, threshold, logFP );
             if( LqVsK[st] > maxLq ){
                 maxLq = LqVsK[st];
                 maxS = s;
@@ -98,12 +99,11 @@ FILE *logFP;
                 maxT = t;
             }
         }
-        (*outputResults)( cParArray[maxT], parArray[maxT], resArray[maxT], s, out_name, logFP );
+        (*outputResults)( xn, gvArray[maxT], ivArray[maxT], logFP );
         
         for( t = 0 ; t < trials ; t++ ){
-            (*freeParameters)( parArray[t] );
-            freeCommonParameters( cParArray[t] );
-            freeResults( resArray[t] );
+            freeIndVars( xn, gvArray[t], &ivArray[t] );
+            freeGlobalVars( xn, &gvArray[t] );
         }
         
         if( s >= (maxS+3) ){
@@ -113,13 +113,12 @@ FILE *logFP;
         
     }
     sTo = s - 1;
-    free( resArray );
-    free( cParArray );
-    free( parArray );
+    free( gvArray );
+    free( ivArray );
     
     char fn[256];
     FILE *fp = NULL;
-    strncpy( fn, out_name, sizeof(fn) );
+    strncpy( fn, xn->name, sizeof(fn) );
     strncat( fn, ".LqVsK", sizeof(fn) - strlen(fn) - 1 );
     if( (fp = fopen( fn, "w" )) != NULL ){
         for( s = 0 ; s < trials * (sTo - sFrom + 1) ; s++ ){
@@ -132,76 +131,53 @@ FILE *logFP;
 }
 
 
-//////////////////////////////////////////////////////////////////  VB-HMM Common Engine
-double vbHmm_Main( xnWv, cParams, params, results, maxIteration, threshold, logFP )
-xnDataSet *xnWv;
-vbHmmCommonParameters *cParams;
-void *params;
-vbHmmResults *results;
-int maxIteration;
-double threshold;
-FILE *logFP;
-{
-    double **LqArr = &results->LqArr;
-    *LqArr = realloc( *LqArr, maxIteration * sizeof(double) );
-
-    int i;
-    for( i = 0 ; i < maxIteration ; i++ ){
-        // E-step
-        forwardBackward( xnWv, cParams, params );
-
-        (*calcStatsVars)( xnWv, cParams, params );
-        (*LqArr)[i] = (*varLowerBound)( xnWv, cParams, params );
-
-        // End loop if derivative of variational lower bound reaches threshold.
-        if( (i>0) && ( fabs( ((*LqArr)[i] - (*LqArr)[i-1]) / (*LqArr)[i] ) < threshold ) ){
-            break;
-        }
-
-        // M-step
-        (*maximization)( xnWv, cParams, params );
-    }
-    if( i == maxIteration ){
-        if( logFP != NULL ){
-            fprintf(logFP, "MAX iteration (%d) reached.\n", maxIteration);
-        }
-        i--;
-    }
-    (*reorderParameters)( cParams, params );
-    maxSum( xnWv, cParams, params, &(results->maxSumTraj) );
-
-    results->iteration = i+1;
-    *LqArr = realloc( *LqArr, (i+1) * sizeof(double) );
-    results->maxLq = (*LqArr)[i];
-    if( logFP != NULL ){
-        fprintf( logFP, "  iteration: %d    evidence p(x|K=%d) = %.20g \n", i+1, cParams->sNo, results->maxLq );
-    }
-    return results->maxLq;
-}
-
-
-// Initializes parameters commonly used in VB-HMM analysis
-vbHmmCommonParameters *initialize_Common( xnWv, sNo )
-xnDataSet *xnWv;
+globalVars *newGlobalVars( xn, sNo )
+xnDataSet *xn;
 int sNo;
 {
-    vbHmmCommonParameters *cParams = (vbHmmCommonParameters*)malloc( sizeof(vbHmmCommonParameters) );
-    cParams->dLen = xnWv->N;
-    cParams->sNo = sNo;
-    size_t dLen = cParams->dLen;
-    int i, n;
+    globalVars *gv = (globalVars*)malloc( sizeof(globalVars) );
+    gv->sNo = sNo;
+    
+    gv->iteration = 0;
+    gv->maxLq = 0.0;
+    gv->LqArr = NULL;
+    
+    gv->params = (*newModelParameters)( xn, sNo );
+    
+    return gv;
+}
 
+void freeGlobalVars( xn, gv )
+xnDataSet *xn;
+globalVars **gv;
+{
+    free( (*gv)->LqArr );
+    
+    (*freeModelParameters)( &(*gv)->params, xn, (*gv)->sNo );
+    
+    free( *gv );
+    *gv = NULL;
+}
+
+indVars *newIndVars( xn, gv )
+xnDataSet *xn;
+globalVars *gv;
+{
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    int i, n;
+    indVars *iv = (indVars*)malloc( sizeof(indVars) );
+    
     // gamma
-    cParams->gmMat = (double**)malloc( dLen * sizeof(double*) );
-    double **gmMat = cParams->gmMat;
-    for( n = 0 ; n < dLen ; n++ )
-    {
+    iv->gmMat = (double**)malloc( dLen * sizeof(double*) );
+    double **gmMat = iv->gmMat;
+    for( n = 0 ; n < dLen ; n++ ){
         gmMat[n] = (double*)malloc( sNo * sizeof(double) );
         memset( gmMat[n], 0, sNo * sizeof(double) );
     }
     // xi
-    cParams->xiMat = (double***)malloc( dLen * sizeof(double**) );
-    double ***xiMat = cParams->xiMat;
+    iv->xiMat = (double***)malloc( dLen * sizeof(double**) );
+    double ***xiMat = iv->xiMat;
     for( n = 0 ; n < dLen ; n++ ){
         xiMat[n] = (double**)malloc( sNo * sizeof(double*) );
         for( i = 0 ; i < sNo ; i++ ){
@@ -209,120 +185,157 @@ int sNo;
             memset( xiMat[n][i], 0, sNo * sizeof(double) );
         }
     }
-
-    // alpha for E-step
-    cParams->aMat = (double**)malloc( dLen * sizeof(double*) );
-    for( n = 0 ; n < dLen ; n++ )
-    {   cParams->aMat[n] = (double*)malloc( sNo * sizeof(double) );  }
-    // beta for E-step
-    cParams->bMat = (double**)malloc( dLen * sizeof(double*) );
-    for( n = 0 ; n < dLen ; n++ )
-    {   cParams->bMat[n] = (double*)malloc( sNo * sizeof(double) );  }
-    // scaling factor for E-step
-    cParams->cn = (double*)malloc( dLen * sizeof(double) );    
-
-    // temporary storage of calculation resutls to save time
-    cParams->valpZnZn1 = (double**)malloc( sNo * sizeof(double*) );
-    for( i = 0 ; i < sNo ; i++ )
-    {   cParams->valpZnZn1[i] = (double*)malloc( sNo * sizeof(double) );  }
-    cParams->valpXnZn = (double**)malloc( dLen * sizeof(double*) );
-    for( n = 0 ; n < dLen ; n++ )
-    {   cParams->valpXnZn[n] = (double*)malloc( sNo * sizeof(double) );  }
     
-    return cParams;
+    // alpha for E-step
+    iv->aMat = (double**)malloc( dLen * sizeof(double*) );
+    for( n = 0 ; n < dLen ; n++ )
+    {   iv->aMat[n] = (double*)malloc( sNo * sizeof(double) );  }
+    // beta for E-step
+    iv->bMat = (double**)malloc( dLen * sizeof(double*) );
+    for( n = 0 ; n < dLen ; n++ )
+    {   iv->bMat[n] = (double*)malloc( sNo * sizeof(double) );  }
+    // scaling factor for E-step
+    iv->cn = (double*)malloc( dLen * sizeof(double) );
+    
+    // temporary storage of calculation resutls to save time
+    iv->valpZnZn1 = (double**)malloc( sNo * sizeof(double*) );
+    for( i = 0 ; i < sNo ; i++ )
+    {   iv->valpZnZn1[i] = (double*)malloc( sNo * sizeof(double) );  }
+    iv->valpXnZn = (double**)malloc( dLen * sizeof(double*) );
+    for( n = 0 ; n < dLen ; n++ )
+    {   iv->valpXnZn[n] = (double*)malloc( sNo * sizeof(double) );  }
+    
+    iv->stats = (*newModelStats)( xn, gv, iv );
+    
+    iv->stateTraj = NULL;
+    
+    return iv;
 }
 
-// Frees memory for common parameters
-void freeCommonParameters( cParams )
-vbHmmCommonParameters *cParams;
+void freeIndVars( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars **iv;
 {
-    size_t dLen = cParams->dLen, sNo = cParams->sNo;
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
     int i, n;
-
+    
     // gamma
     for( n = 0 ; n < dLen ; n++ )
-    {   free( cParams->gmMat[n] );  }
-    free( cParams->gmMat );
+    {   free( (*iv)->gmMat[n] );  }
+    free( (*iv)->gmMat );
     // xi
     for( n = 0 ; n < dLen ; n++ ){
         for( i = 0 ; i < sNo ; i++ ){
-            free( cParams->xiMat[n][i] );
+            free( (*iv)->xiMat[n][i] );
         }
-        free( cParams->xiMat[n] );
+        free( (*iv)->xiMat[n] );
     }
-    free( cParams->xiMat );
-
+    free( (*iv)->xiMat );
+    
     // alpha
     for( n = 0 ; n < dLen ; n++ )
-    {   free( cParams->aMat[n] );  }
-    free( cParams->aMat );
+    {   free( (*iv)->aMat[n] );  }
+    free( (*iv)->aMat );
     // beta
     for( n = 0 ; n < dLen ; n++ )
-    {   free( cParams->bMat[n] );  }
-    free( cParams->bMat );
+    {   free( (*iv)->bMat[n] );  }
+    free( (*iv)->bMat );
     // scaling factor
-    free( cParams->cn );
-
+    free( (*iv)->cn );
+    
     // temporary storage
     for( i = 0 ; i < sNo ; i++ )
-    {   free( cParams->valpZnZn1[i] );  }
-    free( cParams->valpZnZn1 );
+    {   free( (*iv)->valpZnZn1[i] );  }
+    free( (*iv)->valpZnZn1 );
     for( n = 0 ; n < dLen ; n++ )
-    {   free( cParams->valpXnZn[n] );  }
-    free( cParams->valpXnZn );
-
-    free( cParams );
-    cParams = NULL;
+    {   free( (*iv)->valpXnZn[n] );  }
+    free( (*iv)->valpXnZn );
+    
+    free( (*iv)->stateTraj );
+    
+    (*freeModelStats)( &(*iv)->stats, xn, gv, (*iv) );
+    
+    free( *iv );
+    *iv = NULL;
 }
 
-// Provide blank struct of analysis results
-vbHmmResults *newResults()
-{
-    vbHmmResults *results = (vbHmmResults*)malloc( sizeof(vbHmmResults) );
-    results->iteration = 0;
-    results->maxLq = 0.0;
-    results->LqArr = NULL;
-    results->maxSumTraj = NULL;
-    return results;
-}
 
-// Frees memory for results struct
-void freeResults( results )
-vbHmmResults *results;
+//////////////////////////////////////////////////////////////////  VB-HMM Common Engine
+double vbHmm_Main( xn, gv, iv ,maxIteration, threshold, logFP )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
+int maxIteration;
+double threshold;
+FILE *logFP;
 {
-    free( results->LqArr );
-    free( results->maxSumTraj );
-    free( results );
-    results = NULL;
+    double **LqArr = &gv->LqArr;
+    *LqArr = realloc( *LqArr, maxIteration * sizeof(double) );
+
+    (*initializeVbHmm)( xn, gv, iv );
+
+    int i;
+    for( i = 0 ; i < maxIteration ; i++ ){
+        // E-step
+        forwardBackward( xn, gv, iv );
+
+        (*calcStatsVars)( xn, gv, iv );
+        (*LqArr)[i] = (*varLowerBound)( xn, gv, iv );
+
+        // End loop if derivative of variational lower bound reaches threshold.
+        if( (i>0) && ( fabs( ((*LqArr)[i] - (*LqArr)[i-1]) / (*LqArr)[i] ) < threshold ) ){
+            break;
+        }
+
+        // M-step
+        (*maximization)( xn, gv, iv );
+    }
+    if( i == maxIteration ){
+        if( logFP != NULL ){
+            fprintf(logFP, "MAX iteration (%d) reached.\n", maxIteration);
+        }
+        i--;
+    }
+    (*reorderParameters)( xn, gv, iv );
+    maxSum( xn, gv, iv );
+
+    gv->iteration = i+1;
+    *LqArr = realloc( *LqArr, (i+1) * sizeof(double) );
+    gv->maxLq = (*LqArr)[i];
+    if( logFP != NULL ){
+        fprintf( logFP, "  iteration: %d    evidence p(x|K=%d) = %.20g \n", i+1, gv->sNo, gv->maxLq );
+    }
+    return gv->maxLq;
 }
 
 
 // Baum-Welch algorithm for E-step calculation
-void forwardBackward( xnWv, cParams, params )
-xnDataSet *xnWv;
-vbHmmCommonParameters *cParams;
-void *params;
+void forwardBackward( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    size_t dLen = cParams->dLen;	// number of time stamp data points
-    int sNo = cParams->sNo;
-    double **gmMat = cParams->gmMat;
-    double ***xiMat = cParams->xiMat;
-    double **aMat = cParams->aMat, **bMat = cParams->bMat;
-    double *cn = cParams->cn;
-    double **valpZnZn1 = cParams->valpZnZn1, **valpXnZn = cParams->valpXnZn;
+    size_t dLen = xn->N;	// number of time stamp data points
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat, ***xiMat = iv->xiMat;
+    double **aMat = iv->aMat, **bMat = iv->bMat;
+    double *cn = iv->cn;
+    double **valpZnZn1 = iv->valpZnZn1, **valpXnZn = iv->valpXnZn;
 
     size_t  n, i, j;
 
     // forward
     cn[0] = 0.0;
     for( i = 0 ; i < sNo ; i++ ){
-        valpXnZn[0][i] = (*pTilde_xn_zn)( xnWv, 0, (int)i, params );
-        aMat[0][i] = (*pTilde_z1)( (int)i, params ) * valpXnZn[0][i];
+        valpXnZn[0][i] = (*pTilde_xn_zn)( xn, 0, (int)i, gv->params );
+        aMat[0][i] = (*pTilde_z1)( (int)i, gv->params ) * valpXnZn[0][i];
 
         cn[0] += aMat[0][i];
 
         for( j = 0 ; j < sNo ; j++ ){
-            valpZnZn1[i][j] = (*pTilde_zn_zn1)( (int)i, (int)j, params );
+            valpZnZn1[i][j] = (*pTilde_zn_zn1)( (int)i, (int)j, gv->params );
         }
     }
     for( i = 0 ; i < sNo ; i++ ){
@@ -335,7 +348,7 @@ void *params;
             for( i = 0 ; i < sNo ; i++ ){
                 aMat[n][j] += aMat[n-1][i] * valpZnZn1[i][j];
             }
-            valpXnZn[n][j] = (*pTilde_xn_zn)( xnWv, n, (int)j, params );
+            valpXnZn[n][j] = (*pTilde_xn_zn)( xn, n, (int)j, gv->params );
             aMat[n][j] *= valpXnZn[n][j];
             cn[n] += aMat[n][j];
         }
@@ -391,18 +404,17 @@ void *params;
 
 
 // Viterbi algorithm to construct most likely trajectory
-int *maxSum( xnWv, cParams, params, maxSumTraj )
-xnDataSet *xnWv;
-vbHmmCommonParameters *cParams;
-int **maxSumTraj;
-void *params;
+int *maxSum( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    size_t dLen = cParams->dLen;
-    int sNo = cParams->sNo;
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
     size_t n;
     int i, j;
 
-    *maxSumTraj = (int*)realloc( *maxSumTraj, dLen * sizeof(int) );
+    iv->stateTraj = (int*)realloc( iv->stateTraj, dLen * sizeof(int) );
     double **wnMat = (double **)malloc( dLen * sizeof(double*) );
     double **phiMat = (double **)malloc( dLen * sizeof(double*) );
     for( n = 0 ; n < dLen ; n++ ){
@@ -420,21 +432,21 @@ void *params;
         }
     }
     for( i = 0 ; i < sNo ; i++ ){
-        wnMat[0][i] = log((*pTilde_z1)(i, params)) + log((*pTilde_xn_zn)(xnWv, 0, i, params));
+        wnMat[0][i] = log((*pTilde_z1)(i, gv->params)) + log((*pTilde_xn_zn)(xn, 0, i, gv->params));
     }
     for( n = 1 ; n < dLen ; n++ ){
         for( j = 0 ; j < sNo ; j++ ){
-            maxWn = log( (*pTilde_zn_zn1)(0, j, params) ) + wnMat[n-1][0];
+            maxWn = log( (*pTilde_zn_zn1)(0, j, gv->params) ) + wnMat[n-1][0];
             maxI = 0;
             for( i = 1 ; i < sNo ; i++ ){
-                wnTest = log( (*pTilde_zn_zn1)(i, j, params) ) + wnMat[n-1][i];
+                wnTest = log( (*pTilde_zn_zn1)(i, j, gv->params) ) + wnMat[n-1][i];
                 if( wnTest > maxWn ){
                     maxWn = wnTest;
                     maxI = i;
                 }
             }
             phiMat[n][j] = maxI;
-            wnMat[n][j] = log((*pTilde_xn_zn)(xnWv, n, j, params)) + maxWn;
+            wnMat[n][j] = log((*pTilde_xn_zn)(xn, n, j, gv->params)) + maxWn;
         }
     }
 
@@ -447,9 +459,9 @@ void *params;
             maxI = i;
         }
     }
-    (*maxSumTraj)[dLen-1] = maxI;
+    iv->stateTraj[dLen-1] = maxI;
     for( n = dLen-1 ; n > 0 ; n-- ){
-        (*maxSumTraj)[n-1] = phiMat[n][(*maxSumTraj)[n]];
+        iv->stateTraj[n-1] = phiMat[n][iv->stateTraj[n]];
     }
 
     for( n = 0 ; n < dLen ; n++ ){
@@ -459,7 +471,7 @@ void *params;
     free( wnMat );
     free( phiMat );
     
-    return *maxSumTraj;
+    return iv->stateTraj;
 }
 
 

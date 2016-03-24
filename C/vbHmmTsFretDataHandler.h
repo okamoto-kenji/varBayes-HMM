@@ -27,7 +27,7 @@
 
 #include "vbHmmTsFret.h"
 
-xnDataSet *readTsFretBinary( char*, char*, FILE* );
-xnDataSet *tsFretDataSetFromLongArray( unsigned long*, unsigned long*, size_t, size_t, FILE* );
+xnDataSet *readTsFretBinary( char*, char*, char*, FILE* );
+xnDataSet *tsFretDataSetFromLongArray( unsigned long*, unsigned long*, size_t, size_t, char*, FILE* );
 
 //

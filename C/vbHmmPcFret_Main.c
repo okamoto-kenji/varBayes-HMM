@@ -85,16 +85,15 @@ int main( int argc, char *argv[] ){
     }
 
     // Prepare data, typically by loading from file(s).
-    xnDataSet *xnWv = readPcFretBinary( in_name1, in_name2, logFP );
+    xnDataSet *xn = readPcFretBinary( in_name1, in_name2, out_name, logFP );
 
     // If data can be obtained, execute analysis.
-    if( xnWv != NULL ){
+    if( xn != NULL ){
         setFunctions_pcFret();
-        int optK = modelComparison( xnWv, sFrom, sTo, trials, maxIteration, threshold, out_name, logFP );
+        int optK = modelComparison( xn, sFrom, sTo, trials, maxIteration, threshold, logFP );
         fprintf( logFP, " No. of state = %d was chosen.\n", optK);
 
-        free( xnWv->data );
-        free( xnWv );
+        freeXnDataSet_pcFret( &xn );
     }
     
     fprintf( logFP, "FINISH: %d sec. spent.\n", (int)(time((time_t *)NULL) - startTime) );

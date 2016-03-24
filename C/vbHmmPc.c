@@ -16,6 +16,7 @@
 #include <gsl/gsl_sf_gamma.h>
 #include <gsl/gsl_sf_psi.h>
 #include <gsl/gsl_sf_pow_int.h>
+#include <string.h>
 #include "vbHmmPc.h"
 #include "rand.h"
 
@@ -26,202 +27,312 @@
 #define  MAX(a,b)  ((a)>(b)?(a):(b))
 #define  MIN(a,b)  ((a)<(b)?(a):(b))
 
+//static int isGlobalAnalysis = 0;
+
 void setFunctions_pc(){
     commonFunctions funcs;
-    funcs.mallocParameterArray = mallocParameterArray_pc;
-    funcs.initialize_vbHmm = initialize_vbHmm_pc;
-    funcs.freeParameters = freeParameters_pc;
-    funcs.pTilde_z1 = pTilde_z1_pc;
-    funcs.pTilde_zn_zn1 = pTilde_zn_zn1_pc;
-    funcs.pTilde_xn_zn = pTilde_xn_zn_pc;
-    funcs.calcStatsVars = calcStatsVars_pc;
-    funcs.maximization = maximization_pc;
-    funcs.varLowerBound = varLowerBound_pc;
-    funcs.reorderParameters = reorderParameters_pc;
-    funcs.outputResults = outputResults_pc;
+    funcs.newModelParameters    = newModelParameters_pc;
+    funcs.freeModelParameters   = freeModelParameters_pc;
+    funcs.newModelStats         = newModelStats_pc;
+    funcs.freeModelStats        = freeModelStats_pc;
+    funcs.initializeVbHmm       = initializeVbHmm_pc;
+    funcs.pTilde_z1             = pTilde_z1_pc;
+    funcs.pTilde_zn_zn1         = pTilde_zn_zn1_pc;
+    funcs.pTilde_xn_zn          = pTilde_xn_zn_pc;
+    funcs.calcStatsVars         = calcStatsVars_pc;
+    funcs.maximization          = maximization_pc;
+    funcs.varLowerBound         = varLowerBound_pc;
+    funcs.reorderParameters     = reorderParameters_pc;
+    funcs.outputResults         = outputResults_pc;
     setFunctions( funcs );
 }
 
+//void setGFunctions_pc(){
+//    gCommonFunctions funcs;
+//    funcs.newModelParameters    = newModelParameters_pc;
+//    funcs.freeModelParameters   = freeModelParameters_pc;
+//    funcs.newModelStats         = newModelStats_pc;
+//    funcs.freeModelStats        = freeModelStats_pc;
+//    funcs.newModelStatsG        = newModelStatsG_pc;
+//    funcs.freeModelStatsG       = freeModelStatsG_pc;
+//    funcs.initializeVbHmmG      = initializeVbHmmG_pc;
+//    funcs.pTilde_z1             = pTilde_z1_pc;
+//    funcs.pTilde_zn_zn1         = pTilde_zn_zn1_pc;
+//    funcs.pTilde_xn_zn          = pTilde_xn_zn_pc;
+//    funcs.calcStatsVarsG        = calcStatsVarsG_pc;
+//    funcs.maximizationG         = maximizationG_pc;
+//    funcs.varLowerBoundG        = varLowerBoundG_pc;
+//    funcs.reorderParametersG    = reorderParametersG_pc;
+//    funcs.outputResultsG        = outputResultsG_pc;
+//    setGFunctions( funcs );
+//    isGlobalAnalysis = 1;
+//}
 
-void **mallocParameterArray_pc( n )
-size_t n;
-{
-    return (void**)malloc( n * sizeof(pcParameters*) );
-}
 
-
-void outputResults_pc( cParams, params, results, s, out_name, logFP )
-vbHmmCommonParameters *cParams;
-void *params;
-vbHmmResults *results;
-int s;
-char *out_name;
+void outputResults_pc( xn, gv, iv, logFP )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 FILE *logFP;
-{    
-    outputPcResults( cParams, (pcParameters*)params, results, s, out_name, logFP );
+{
+    outputPcResults( xn, gv, iv, logFP );
+}
+
+//void outputResultsG_pc( xns, gv, ivs, logFP )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//FILE *logFP;
+//{
+//    outputPcResultsG( xns, gv, ivs, logFP );
+//}
+
+
+void *newModelParameters_pc( xn, sNo )
+xnDataSet *xn;
+int sNo;
+{
+    int i;
+    pcParameters *p = (void*)malloc( sizeof(pcParameters) );
+    
+    p->uPiArr = (double*)malloc( sNo * sizeof(double) );
+    p->sumUPi = 0.0;
+    p->uAMat = (double**)malloc( sNo * sizeof(double*) );
+    for( i = 0 ; i < sNo ; i++ ){
+        p->uAMat[i] = (double*)malloc( sNo * sizeof(double) );
+    }
+    p->sumUAArr = (double*)malloc( sNo * sizeof(double) );
+
+    p->avgPi = (double *)malloc( sNo * sizeof(double) );
+    p->avgLnPi = (double *)malloc( sNo * sizeof(double) );
+    p->avgA = (double **)malloc( sNo * sizeof(double*) );
+    p->avgLnA = (double **)malloc( sNo * sizeof(double*) );
+    for( i = 0 ; i < sNo ; i++ ){
+        p->avgA[i] = (double *)malloc( sNo * sizeof(double) );
+        p->avgLnA[i] = (double *)malloc( sNo * sizeof(double) );
+    }
+
+    p->avgI = (double *)malloc( sNo * sizeof(double) );
+    p->avgLnI = (double *)malloc( sNo * sizeof(double) );
+
+    p->aIArr = (double*)malloc( sNo * sizeof(double) );
+    p->bIArr = (double*)malloc( sNo * sizeof(double) );
+
+    return p;
+}
+
+void freeModelParameters_pc( p, xn, sNo )
+void **p;
+xnDataSet *xn;
+int sNo;
+{
+    pcParameters *gp = *p;
+    int i;
+    
+    free( gp->uPiArr );
+    for( i = 0 ; i < sNo ; i++ ){
+        free( gp->uAMat[i] );
+    }
+    free( gp->uAMat );
+    free( gp->sumUAArr );
+    
+    free( gp->avgPi );
+    free( gp->avgLnPi );
+    for( i = 0 ; i < sNo ; i++ ){
+        free( gp->avgA[i] );
+        free( gp->avgLnA[i] );
+    }
+    free( gp->avgA );
+    free( gp->avgLnA );
+
+    free( gp->avgI );
+    free( gp->avgLnI );
+    
+    free( gp->aIArr );
+    free( gp->bIArr );
+    
+    free( *p );
+    *p = NULL;
 }
 
 
-void *initialize_vbHmm_pc( xnWv, cParams )
-xnDataSet *xnWv;
-vbHmmCommonParameters* cParams;
+void *newModelStats_pc( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    pcData *pc = xnWv->data;
-    int sNo = cParams->sNo;
-    pcParameters *params = blankParameters_pc( sNo );
-    params->sNo = sNo;
-    params->binSize = pc->binSize;
+//    if( isGlobalAnalysis == 0 ){
+        int sNo = gv->sNo;
+        pcStats *s = (pcStats*)malloc( sizeof(pcStats) );
+        
+        int i;
+        s->Ni = (double *)malloc( sNo * sizeof(double) );
+        s->Nij = (double **)malloc( sNo * sizeof(double*) );
+        for( i = 0 ; i < sNo ; i++ )
+        {   s->Nij[i] = (double *)malloc( sNo * sizeof(double) );   }
+        s->Ci = (double *)malloc( sNo * sizeof(double) );
+        s->Mi = (double *)malloc( sNo * sizeof(double) );
+        
+        return s;
+        
+//    } else {
+//        
+//        return NULL;
+//        
+//    }
+}
+
+void freeModelStats_pc( s, xn, gv, iv )
+void **s;
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
+{
+//    if( isGlobalAnalysis == 0 ){
+        int sNo = gv->sNo;
+        pcStats *gs = *s;
+        int i;
+        free( gs->Ni );
+        for( i = 0 ; i < sNo ; i++ )
+        {   free( gs->Nij[i] );   }
+        free( gs->Nij );
+        free( gs->Ci );
+        free( gs->Mi );
+    
+        free( gs );
+        *s = NULL;
+//    }
+}
+
+//void *newModelStatsG_pc( xns, gv, ivs)
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//    int sNo = gv->sNo;
+//    pcGlobalStats *gs = (pcGlobalStats*)malloc( sizeof(pcGlobalStats) );
+//    
+//    return gs;
+//}
+
+//void freeModelStatsG_pc( gs, xns, gv, ivs )
+//void **gs;
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//    int sNo = gv->sNo;
+//    pcGlobalStats *ggs = *gs;
+//    
+//    free( *gs );
+//    *gs = NULL;
+//}
+
+
+void initializeVbHmm_pc( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
+{
+    pcData *d = xn->data;
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    pcParameters *p = gv->params;
 
     int i, j;
     size_t totalC = 0;
-    for( i = 0 ; i < xnWv->N ; i++ ){
-        totalC += pc->counts[i];
+    for( i = 0 ; i < dLen ; i++ ){
+        totalC += d->counts[i];
     }
-    double meanI = (double)totalC / (double)xnWv->N;
+    double meanI = (double)totalC / (double)dLen;
 
     // hyperparameter for p( pi(k) )
-    params->sumUPi = 0.0;
+    p->sumUPi = 0.0;
     for( i = 0 ; i < sNo ; i++ ){
-        params->uPiArr[i] = 1.0;
-        params->sumUPi += params->uPiArr[i];
+        p->uPiArr[i] = 1.0;
+        p->sumUPi += p->uPiArr[i];
     }
 
     // hyperparameter for p( A(i,j) )
     for( i = 0 ; i < sNo ; i++ ){
-        params->sumUAArr[i] = 0.0;
+        p->sumUAArr[i] = 0.0;
         for( j = 0 ; j < sNo ; j++ ){
             if( j == i ){
-                params->uAMat[i][j] = 100.0;
+                p->uAMat[i][j] = 100.0;
             } else {
-                params->uAMat[i][j] = 1.0;
+                p->uAMat[i][j] = 1.0;
             }
-            params->sumUAArr[i] += params->uAMat[i][j];
+            p->sumUAArr[i] += p->uAMat[i][j];
         }
     }
 
     // hyperparameter for p( I(k) )
     for( i = 0 ; i < sNo ; i++ ){
-        params->aIArr[i] = 1.0;
-        params->bIArr[i] = 1.0 / meanI;
+        p->aIArr[i] = 1.0;
+        p->bIArr[i] = 1.0 / meanI;
     }
     
-    double sumPar = 0.0;
-    for( i = 0 ; i < sNo ; i++ ){
-        params->avgPi[i] = 1.0/(double)sNo + enoise(0.1/(double)sNo);
-        sumPar += params->avgPi[i];
-    }
-    for( i = 0 ; i < sNo ; i++ ){
-        params->avgPi[i] /= sumPar;
-        params->avgLnPi[i] = log( params->avgPi[i] );
-    }
+    initialize_indVars_pc( xn, gv, iv );
+    
+    calcStatsVars_pc( xn, gv, iv );
+    maximization_pc( xn, gv, iv );
+}
 
-    for( i = 0 ; i < sNo ; i++ ){
+//void initializeVbHmmG_pc( xns, gv, ivs )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//}
+
+
+void initialize_indVars_pc( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
+{
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat;
+    
+    int i;
+    size_t n;
+    double sumPar;
+    for( n = 0 ; n < dLen ; n++ ){
         sumPar = 0.0;
-        for( j = 0 ; j < sNo ; j++ ){
-            if( j == i ){
-                params->avgA[i][j] = 100.0 + enoise(1.0);
-            } else {
-                params->avgA[i][j] = 1.0 + enoise(0.01);
-            }
-            sumPar += params->avgA[i][j];
+        for( i = 0 ; i < sNo ; i++ ){
+            gmMat[n][i] = enoise(1.0) + 1.0;
+            sumPar += gmMat[n][i];
         }
-        for( j = 0 ; j < sNo ; j++ ){
-            params->avgA[i][j] /= sumPar;
-            params->avgLnA[i][j] = log( params->avgA[i][j] );
+        for( i = 0 ; i < sNo ; i++ ){
+            gmMat[n][i] /= sumPar;
         }
     }
-
-    for( i = 0 ; i < sNo ; i++ ){
-        params->avgI[i] = meanI + enoise(meanI/100.0);
-        params->avgLnI[i] = log( params->avgI[i] );
-    }
-
-    return params;
-}
-
-pcParameters *blankParameters_pc( sNo )
-int sNo;
-{
-    int i;
-    pcParameters *params = (pcParameters*)malloc( sizeof(pcParameters) );
-
-    params->sNo = 0;
-    params->binSize = 0.0;
-    params->uPiArr = (double*)malloc( sNo * sizeof(double) );
-    params->sumUPi = 0.0;
-    params->uAMat = (double**)malloc( sNo * sizeof(double*) );
-    params->sumUAArr = (double*)malloc( sNo * sizeof(double) );
-    for( i = 0 ; i < sNo ; i++ ){
-        params->uAMat[i] = (double*)malloc( sNo * sizeof(double) );
-    }
-    params->aIArr = (double*)malloc( sNo * sizeof(double) );
-    params->bIArr = (double*)malloc( sNo * sizeof(double) );
-    params->avgPi = (double *)malloc( sNo * sizeof(double) );
-    params->avgLnPi = (double *)malloc( sNo * sizeof(double) );
-    params->avgA = (double **)malloc( sNo * sizeof(double*) );
-    params->avgLnA = (double **)malloc( sNo * sizeof(double*) );
-    for( i = 0 ; i < sNo ; i++ ){
-        params->avgA[i] = (double *)malloc( sNo * sizeof(double) );
-        params->avgLnA[i] = (double *)malloc( sNo * sizeof(double) );
-    }
-    params->avgI = (double *)malloc( sNo * sizeof(double) );
-    params->avgLnI = (double *)malloc( sNo * sizeof(double) );
-    params->Ni = (double *)malloc( sNo * sizeof(double) );
-    params->Ci = (double *)malloc( sNo * sizeof(double) );
-    params->Mi = (double *)malloc( sNo * sizeof(double) );
-    params->Nij = (double **)malloc( sNo * sizeof(double*) );
-    for( i = 0 ; i < sNo ; i++ )
-    {   params->Nij[i] = (double *)malloc( sNo * sizeof(double) );   }
-    
-    return params;
 }
 
 
-void freeParameters_pc( params )
-void *params;
+xnDataSet *newXnDataSet_pc( filename )
+const char *filename;
 {
-    pcParameters *p = (pcParameters*)params;
-    int i;
-
-    free( p->uPiArr );
-    for( i = 0 ; i < p->sNo ; i++ ){
-        free( p->uAMat[i] );
-    }
-    free( p->uAMat );
-    free( p->sumUAArr );
-    free( p->aIArr );
-    free( p->bIArr );
-    
-    free( p->avgPi );
-    free( p->avgLnPi );
-    for( i = 0 ; i < p->sNo ; i++ ){
-        free( p->avgA[i] );
-        free( p->avgLnA[i] );
-    }
-    free( p->avgA );
-    free( p->avgLnA );
-    free( p->avgI );
-    free( p->avgLnI );
-
-    free( p->Ni );
-    free( p->Ci );
-    free( p->Mi );
-    for( i = 0 ; i < p->sNo ; i++ )
-    {   free( p->Nij[i] );   }
-    free( p->Nij );
-    
-    free( p );
-    p = NULL;
+    xnDataSet *xn = (xnDataSet*)malloc( sizeof(xnDataSet) );
+    xn->name = (char*)malloc( strlen(filename) + 2 );
+    strncpy( xn->name, filename, strlen(filename)+1 );
+    xn->data = (pcData*)malloc( sizeof(pcData) );
+    pcData *d = (pcData*)xn->data;
+    d->binSize = 0.0;
+    d->counts = NULL;
+    return xn;
 }
 
-void freePcDataSet( pcTraj )
-xnDataSet *pcTraj;
+void freeXnDataSet_pc( xn )
+xnDataSet **xn;
 {
-    pcData *pc = pcTraj->data;
-    free( pc->counts );
-    free( pcTraj->data );
-    free( pcTraj );
-    pcTraj = NULL;
+    pcData *d = (pcData*)(*xn)->data;
+    free( d->counts );
+    free( (*xn)->data );
+    free( (*xn)->name );
+    free( *xn );
+    *xn = NULL;
 }
 
 
@@ -253,18 +364,18 @@ void *params;
 }
 
 
-void calcStatsVars_pc( xnWv, cParams, params )
-xnDataSet *xnWv;
-vbHmmCommonParameters *cParams;
-void *params;
+void calcStatsVars_pc( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    pcParameters *p = (pcParameters*)params;
-    pcData *xn = (pcData*)xnWv->data;
-    size_t dLen = cParams->dLen;
-    int sNo = cParams->sNo;
-    double **gmMat = cParams->gmMat, ***xiMat = cParams->xiMat;
-    double *Ni = p->Ni, *Ci = p->Ci;
-    double *Mi = p->Mi, **Nij = p->Nij;
+    pcData *d = (pcData*)xn->data;
+    pcStats *s = (pcStats*)iv->stats;
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat, ***xiMat = iv->xiMat;
+    double *Ni = s->Ni, **Nij = s->Nij;
+    double *Mi = s->Mi, *Ci = s->Ci;
     size_t n;
     int i, j;
 
@@ -279,29 +390,38 @@ void *params;
     for( n = 0 ; n < dLen ; n++ ){
         for( i = 0 ; i < sNo ; i++ ){
             Ni[i]  += gmMat[n][i];
-            Ci[i]  += gmMat[n][i] * (double)xn->counts[n];
+            Ci[i]  += gmMat[n][i] * (double)d->counts[n];
             for( j = 0 ; j < sNo ; j++ ){
-                Mi[i]    += xiMat[n][i][j];
+                Mi[i]     += xiMat[n][i][j];
                 Nij[i][j] += xiMat[n][i][j];
             }
         }
     }
 }
 
-void maximization_pc( xnWv, cParams, params )
-xnDataSet *xnWv;
-vbHmmCommonParameters *cParams;
-void *params;
+//void calcStatsVarsG_pc( xns, gv, ivs )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//}
+
+
+void maximization_pc( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    pcParameters *p = (pcParameters*)params;
-    int sNo = cParams->sNo;
-    double **gmMat = cParams->gmMat;
+    pcParameters *p = (pcParameters*)gv->params;
+    pcStats *s = (pcStats*)iv->stats;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat;
     double *avgPi = p->avgPi, *avgLnPi = p->avgLnPi, **avgA = p->avgA, **avgLnA = p->avgLnA;
     double *avgI = p->avgI, *avgLnI = p->avgLnI;
     double *uPiArr = p->uPiArr, sumUPi = p->sumUPi, *aIArr = p->aIArr, *bIArr = p->bIArr;
     double **uAMat = p->uAMat, *sumUAArr = p->sumUAArr;
-    double *Ni = p->Ni, *Ci = p->Ci;
-    double *Mi = p->Mi, **Nij = p->Nij;
+    double *Ni = s->Ni, **Nij = s->Nij;
+    double *Mi = s->Mi, *Ci = s->Ci;
     int i, j;
 
     for( i = 0 ; i < sNo ; i++ ){
@@ -328,21 +448,30 @@ void *params;
     }
 }
 
-double varLowerBound_pc( xnWv, cParams, params )
-xnDataSet *xnWv;
-vbHmmCommonParameters *cParams;
-void *params;
+//void maximizationG_pc( xns, gv, ivs )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//}
+
+
+double varLowerBound_pc( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    pcParameters *p = (pcParameters*)params;
-    size_t dLen = cParams->dLen;
-    int sNo = cParams->sNo;
-    double **gmMat = cParams->gmMat, *cn = cParams->cn;
+    pcParameters *p = (pcParameters*)gv->params;
+    pcStats *s = (pcStats*)iv->stats;
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat, *cn = iv->cn;
     double *avgLnPi = p->avgLnPi, **avgLnA = p->avgLnA;
     double *avgI = p->avgI, *avgLnI = p->avgLnI;
     double *uPiArr = p->uPiArr, sumUPi = p->sumUPi, *aIArr = p->aIArr, *bIArr = p->bIArr;
     double **uAMat = p->uAMat, *sumUAArr = p->sumUAArr;
-    double *Ni = p->Ni, *Ci = p->Ci;
-    double *Mi = p->Mi, **Nij = p->Nij;
+    double *Ni = s->Ni, **Nij = s->Nij;
+    double *Mi = s->Mi, *Ci = s->Ci;
     size_t n;
     int i, j;
     
@@ -388,19 +517,27 @@ void *params;
     return val;
 }    
 
+//double varLowerBoundG_pc( xns, gv, ivs )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//}
 
-void reorderParameters_pc( cParams, params )
-vbHmmCommonParameters *cParams;
-void *params;
+
+void reorderParameters_pc( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    pcParameters *p = (pcParameters*)params;
-    size_t dLen = cParams->dLen;
-    int sNo = cParams->sNo;
-    double **gmMat = cParams->gmMat, ***xiMat = cParams->xiMat;
-    double *avgPi = p->avgPi, *avgLnPi = p->avgLnPi, **avgA = p->avgA;
-    double **avgLnA = p->avgLnA;
+    pcParameters *p = (pcParameters*)gv->params;
+    pcStats *s = (pcStats*)iv->stats;
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat, ***xiMat = iv->xiMat;
+    double *avgPi = p->avgPi, *avgLnPi = p->avgLnPi, **avgA = p->avgA, **avgLnA = p->avgLnA;
     double *avgI = p->avgI, *avgLnI = p->avgLnI;
-    double *Ni = p->Ni, *Ci = p->Ci;
+    double *Ni = s->Ni, *Ci = s->Ci;
     size_t n;
     int i, j;
 
@@ -477,27 +614,43 @@ void *params;
     free( index );
 }
 
+//void reorderParametersG_pc( xns, gv, ivs )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//}
 
-void outputPcResults( cParams, params, results, s, out_name, logFP )
-vbHmmCommonParameters *cParams;
-pcParameters *params;
-vbHmmResults *results;
-int s;
-char *out_name;
+
+void outputPcResults( xn, gv, iv, logFP )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 FILE *logFP;
 {
+    pcParameters *p = (pcParameters*)gv->params;
+    int sNo = gv->sNo;
+
     int i, j;
-    fprintf(logFP, "  results: K = %d \n", s);
-    fprintf(logFP, "   intensities: ( %g", params->avgI[0]);
-    for( i = 1 ; i < cParams->sNo ; i++ )
-    {   fprintf(logFP, ", %g", params->avgI[i]);   }
+    fprintf(logFP, "  results: K = %d \n", sNo);
+    
+    fprintf(logFP, "   intensity: ( %g", p->avgI[0]);
+    for( i = 1 ; i < sNo ; i++ )
+    {   fprintf(logFP, ", %g", p->avgI[i]);   }
     fprintf(logFP, " ) \n");
+    
+    fprintf(logFP, "   pi: ( %g", p->avgPi[0]);
+    for( i = 1 ; i < sNo ; i++ ){
+        fprintf(logFP, ", %g", p->avgPi[i]);
+    }
+    fprintf(logFP, " ) \n");
+    
     fprintf(logFP, "   A_matrix: [");
-    for( i = 0 ; i < cParams->sNo ; i++ ){
-            fprintf(logFP, " ( %g", params->avgA[i][0]);
-            for( j = 1 ; j < cParams->sNo ; j++ )
-            {   fprintf(logFP, ", %g", params->avgA[i][j]);   }
-            fprintf(logFP, ")");
+    for( i = 0 ; i < sNo ; i++ ){
+        fprintf(logFP, " ( %g", p->avgA[i][0]);
+        for( j = 1 ; j < sNo ; j++ )
+        {   fprintf(logFP, ", %g", p->avgA[i][j]);   }
+        fprintf(logFP, ")");
     }
     fprintf(logFP, " ] \n\n");
 
@@ -505,38 +658,46 @@ FILE *logFP;
     FILE *fp;
     size_t n;
 
-    sprintf( fn, "%s.param%03d", out_name, s );
+    sprintf( fn, "%s.param%03d", xn->name, sNo );
     if( (fp = fopen( fn, "w")) != NULL ){
-        fprintf(fp, "I");
-        for( i = 0 ; i < cParams->sNo ; i++ )
+        fprintf(fp, "I, pi");
+        for( i = 0 ; i < sNo ; i++ )
         {   fprintf(fp, ", A%dx", i);   }
         fprintf(fp, "\n");
         
-        for( i = 0 ; i < cParams->sNo ; i++ ){
-            fprintf(fp, "%g", params->avgI[i]);
-            for( j = 0 ; j < cParams->sNo ; j++ )
-            {   fprintf(fp, ", %g", params->avgA[j][i]);   }
+        for( i = 0 ; i < sNo ; i++ ){
+            fprintf(fp, "%g, %g", p->avgI[i], p->avgPi[i]);
+            for( j = 0 ; j < sNo ; j++ )
+            {   fprintf(fp, ", %g", p->avgA[j][i]);   }
             fprintf(fp, "\n");
         }
         fclose(fp);
     }
     
-    sprintf( fn, "%s.Lq%03d", out_name, s );
+    sprintf( fn, "%s.Lq%03d", xn->name, sNo );
     if( (fp = fopen( fn, "w")) != NULL ){
-        for( n = 0 ; n < results->iteration ; n++ ){
-            fprintf( fp, "%24.20e\n", results->LqArr[n] );
+        for( n = 0 ; n < gv->iteration ; n++ ){
+            fprintf( fp, "%24.20e\n", gv->LqArr[n] );
         }
         fclose(fp);
     }
     
-    sprintf( fn, "%s.maxS%03d", out_name, s );
+    sprintf( fn, "%s.maxS%03d", xn->name, sNo );
     if( (fp = fopen( fn, "w")) != NULL ){
-        for( n = 0 ; n < cParams->dLen ; n++ ){
-            fprintf( fp, "%d\n", results->maxSumTraj[n] );
+        for( n = 0 ; n < xn->N ; n++ ){
+            fprintf( fp, "%d\n", iv->stateTraj[n] );
         }
         fclose(fp);
     }
 
 }
+
+//void outputPcResultsG( xns, gv, ivs, logFP )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//FILE *logFP;
+//{
+//}
 
 //

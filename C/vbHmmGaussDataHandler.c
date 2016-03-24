@@ -21,25 +21,23 @@ char *filename;
 FILE *logFP;
 {
     size_t dlen;
-    xnDataSet *traj = NULL;
+    xnDataSet *xn = NULL;
 
     double *doubleData = readDoubleArrayFromFile( filename, &dlen, logFP );
     if( dlen > 0 ){
-        traj = (xnDataSet*)malloc( sizeof(xnDataSet) );
-        traj->N = dlen;
-        traj->T = 0.0;
-        traj->data = (gaussData*)malloc( sizeof( gaussData ) );
-        gaussData *dat = traj->data;
+        xn = newXnDataSet_gauss( filename );
+        xn->N = dlen;
+        gaussData *dat = xn->data;
         dat->v = (double*)malloc( dlen * sizeof(double) );
         size_t i;
         for( i = 0 ; i < dlen ; i++ ){
             dat->v[i] = doubleData[i];
         }
-        fprintf( logFP, "  Total of %u points read in.\n\n", (unsigned int)traj->N);
+        fprintf( logFP, "  Total of %u points read in.\n\n", (unsigned int)xn->N);
 
         free( doubleData );
     }
-    return traj;
+    return xn;
 }
 
 

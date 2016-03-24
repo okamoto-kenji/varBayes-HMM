@@ -26,7 +26,6 @@
 
 int main( int argc, char *argv[] ){
     
-    char  in_name[255], out_name[255];
     FILE  *logFP = stderr;
     char  logFilename[256];
     time_t  startTime = time((time_t *)NULL);
@@ -36,11 +35,10 @@ int main( int argc, char *argv[] ){
     double threshold;
 
     // Get command line arguments.
-    if (argc != 7) {
+    if (argc < 7) {
         // Invalid number of arguments
         fprintf( stderr, "\nVariational-Bayesian Hidden-Markov-Model\n" );
-//        fprintf( stderr, "    built on 2011.03.07\n" );
-        fprintf( stderr, "Syntax : (vbHmm) sFrom sMax trials maxIteration threshold filename\n" );
+        fprintf( stderr, "Syntax : (vbHmm) sFrom sMax trials maxIteration threshold filename ...\n" );
         fprintf( stderr, "         sFrom        : minimum number of state to analyze\n" );
         fprintf( stderr, "         sMax         : maximum number of state to analyze\n" );
         fprintf( stderr, "         trials       : number of repetition (giving chance to change initial conditions)\n" );
@@ -51,7 +49,7 @@ int main( int argc, char *argv[] ){
         freeRan();
         exit(1);
 
-    } else if( argc == 7 ){
+    } else if( argc >= 7 ){
         // Set parameters
         sFrom = atoi( argv[1] );
         sTo = atoi( argv[2] );
@@ -60,30 +58,54 @@ int main( int argc, char *argv[] ){
         threshold = atof( argv[5] );
         
         // Set the output filename
-        strncpy( in_name, argv[6], sizeof(in_name) );
-        strncpy( out_name, argv[6], sizeof(out_name) );
-
-        strncpy( logFilename, out_name, sizeof(logFilename) );
-        strncat( logFilename, ".log", sizeof(logFilename) );
+        strncpy( logFilename, argv[6], sizeof(logFilename) );
+        strncat( logFilename, ".log", sizeof(logFilename) - strlen(logFilename) - 1 );
         logFP = fopen( logFilename, "w" );
     }
     
     // Prepare data, typically by loading from file(s).
-    xnDataSet *xnWv = read_template_data( in_name, logFP );
-
+    xnDataBundle *xns = (xnDataBundle*)malloc( sizeof(xnDataBundle) );
+    xns->R = 0;
+    xns->xn = NULL;
+    int i;
+    for( i = 6 ; i < argc ; i++ ){
+        xnDataSet *xn = read_template_data( argv[i], logFP );
+        if( xn != NULL ){
+            xns->xn = (xnDataSet**)realloc( xns->xn, (xns->R + 1) * sizeof(xnDataSet*) );
+            xns->xn[xns->R] = xn;
+            xns->R++;
+        }
+    }
+    
     // If data can be obtained, execute analysis.
-    if( xnWv != NULL ){
-        setFunctions__();
-        int optK = modelComparison( xnWv, sFrom, sTo, trials, maxIteration, threshold, out_name, logFP );
+    if( xns->R > 0 ){
+        int optK;
+        if( xns->R == 1 ){
+            
+            setFunctions__();
+            xnDataSet *xn = xns->xn[0];
+            free( xns->xn );
+            free( xns );
+            optK = modelComparison( xn, sFrom, sTo, trials, maxIteration, threshold, logFP );
+            freeXnDataSet__( &xn );
+            
+        } else {
+            
+            setGFunctions__();
+            optK = gModelComparison( xns, sFrom, sTo, trials, maxIteration, threshold, logFP );
+            for( i = 0 ; i < xns->R ; i++ ){
+                freeXnDataSet__( &xns->xn[i] );
+            }
+            free( xns->xn );
+            free( xns );
+            
+        }
         fprintf( logFP, " No. of state = %d was chosen.\n", optK);
-        
-        free( xnWv->data );
-        free( xnWv );
     }
     
     fprintf( logFP, "FINISH: %d sec. spent.\n", (int)(time((time_t *)NULL) - startTime) );
     if( logFP != stderr )  fclose( logFP );
-
+    
     freeRan();
     return 1;
 }

@@ -15,9 +15,10 @@
 
 #define DATA_READ_NUMBER 1000
 
-xnDataSet *readPcFretBinary( filename1, filename2, logFP )
+xnDataSet *readPcFretBinary( filename1, filename2, out_name, logFP )
 char *filename1;
 char *filename2;
+char *out_name;
 FILE *logFP;
 {
     size_t dlen1, dlen2;
@@ -33,29 +34,28 @@ FILE *logFP;
         exit(1);
     }
 
-    xnDataSet *traj = (xnDataSet*)malloc( sizeof(xnDataSet) );
-    traj->N = dlen1 - 2;
-    traj->T = acqTime1 * traj->N;
-    traj->data = (pcFretData*)malloc( sizeof( pcFretData ) );
-    pcFretData *pc = traj->data;
-    pc->binSize = acqTime1;
-    pc->dCounts = (unsigned int*)malloc( (dlen1-2) * sizeof(unsigned int) );
-    pc->aCounts = (unsigned int*)malloc( (dlen1-2) * sizeof(unsigned int) );
+    xnDataSet *xn = newXnDataSet_pcFret( out_name );
+    xn->N = dlen1 - 2;
+    xn->data = (pcFretData*)malloc( sizeof( pcFretData ) );
+    pcFretData *d = xn->data;
+    d->binSize = acqTime1;
+    d->dCounts = (unsigned int*)malloc( (dlen1-2) * sizeof(unsigned int) );
+    d->aCounts = (unsigned int*)malloc( (dlen1-2) * sizeof(unsigned int) );
     size_t i;
     for( i = 2 ; i < dlen1 ; i++ ){
-        pc->dCounts[i-2] = shortData1[i];
-        pc->aCounts[i-2] = shortData2[i];
+        d->dCounts[i-2] = shortData1[i];
+        d->aCounts[i-2] = shortData2[i];
     }
 #ifdef SIMU_STATS
     pc->states = NULL;
     pc->pn = NULL;
 #endif
 
-    fprintf( logFP, "  Total of %u bins, with bin size %g s, %.3lf seconds read in.\n\n", (unsigned int)traj->N, acqTime1, traj->T);
+    fprintf( logFP, "  Total of %u bins, with bin size %g s, %.3lf seconds read in.\n\n", (unsigned int)xn->N, acqTime1, acqTime1 * xn->N);
 
     free( shortData1 );
     free( shortData2 );
-    return traj;
+    return xn;
 }
 
 

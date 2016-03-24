@@ -14,6 +14,7 @@
 #include "vbHmmTsFret.h"
 #include <gsl/gsl_sf_gamma.h>
 #include <gsl/gsl_sf_psi.h>
+#include <string.h>
 #include "rand.h"
 
 #ifdef _OPENMP
@@ -34,224 +35,334 @@
 #define  MIN(a,b)  ((a)<(b)?(a):(b))
 
 
+//static int isGlobalAnalysis = 0;
+
 void setFunctions_tsFret(){
     commonFunctions funcs;
-    funcs.mallocParameterArray = mallocParameterArray_tsFret;
-    funcs.initialize_vbHmm = initialize_vbHmm_tsFret;
-    funcs.freeParameters = freeParameters_tsFret;
-    funcs.pTilde_z1 = pTilde_z1_tsFret;
-    funcs.pTilde_zn_zn1 = pTilde_zn_zn1_tsFret;
-    funcs.pTilde_xn_zn = pTilde_xn_zn_tsFret;
-    funcs.calcStatsVars = calcStatsVars_tsFret;
-    funcs.maximization = maximization_tsFret;
-    funcs.varLowerBound = varLowerBound_tsFret;
-    funcs.reorderParameters = reorderParameters_tsFret;
-    funcs.outputResults = outputResults_tsFret;
+    funcs.newModelParameters    = newModelParameters_tsFret;
+    funcs.freeModelParameters   = freeModelParameters_tsFret;
+    funcs.newModelStats         = newModelStats_tsFret;
+    funcs.freeModelStats        = freeModelStats_tsFret;
+    funcs.initializeVbHmm       = initializeVbHmm_tsFret;
+    funcs.pTilde_z1             = pTilde_z1_tsFret;
+    funcs.pTilde_zn_zn1         = pTilde_zn_zn1_tsFret;
+    funcs.pTilde_xn_zn          = pTilde_xn_zn_tsFret;
+    funcs.calcStatsVars         = calcStatsVars_tsFret;
+    funcs.maximization          = maximization_tsFret;
+    funcs.varLowerBound         = varLowerBound_tsFret;
+    funcs.reorderParameters     = reorderParameters_tsFret;
+    funcs.outputResults         = outputResults_tsFret;
     setFunctions( funcs );
 }
 
+//void setGFunctions_tsFret(){
+//    gCommonFunctions funcs;
+//    funcs.newModelParameters    = newModelParameters_tsFret;
+//    funcs.freeModelParameters   = freeModelParameters_tsFret;
+//    funcs.newModelStats         = newModelStats_tsFret;
+//    funcs.freeModelStats        = freeModelStats_tsFret;
+//    funcs.newModelStatsG        = newModelStatsG_tsFret;
+//    funcs.freeModelStatsG       = freeModelStatsG_tsFret;
+//    funcs.initializeVbHmmG      = initializeVbHmmG_tsFret;
+//    funcs.pTilde_z1             = pTilde_z1_tsFret;
+//    funcs.pTilde_zn_zn1         = pTilde_zn_zn1_tsFret;
+//    funcs.pTilde_xn_zn          = pTilde_xn_zn_tsFret;
+//    funcs.calcStatsVarsG        = calcStatsVarsG_tsFret;
+//    funcs.maximizationG         = maximizationG_tsFret;
+//    funcs.varLowerBoundG        = varLowerBoundG_tsFret;
+//    funcs.reorderParametersG    = reorderParametersG_tsFret;
+//    funcs.outputResultsG        = outputResultsG_tsFret;
+//    setGFunctions( funcs );
+//    isGlobalAnalysis = 1;
+//}
 
-void **mallocParameterArray_tsFret( n )
-size_t n;
-{
-    return (void**)malloc( n * sizeof(tsFretParameters*) );
-}
 
-
-void outputResults_tsFret( cParams, params, results, s, out_name, logFP )
-vbHmmCommonParameters *cParams;
-void *params;
-vbHmmResults *results;
-int s;
-char *out_name;
+void outputResults_tsFret( xn, gv, iv, logFP )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 FILE *logFP;
-{    
-    outputTsFretResults( cParams, (tsFretParameters*)params, results, s, out_name, logFP );
-}
-
-
-void *initialize_vbHmm_tsFret( xnWv, cParams )
-xnDataSet *xnWv;
-vbHmmCommonParameters* cParams;
 {
-    int sNo = cParams->sNo;
-    tsFretParameters *params = blankParameters_tsFret( sNo );
-    params->sNo = cParams->sNo;
-    int i, j;
-
-    // hyperparameter for p( pi(i) )
-    params->sumUPi = 0.0;
-    for( i = 0 ; i < sNo ; i++ ){
-        params->uPiArr[i] = 1.0;
-        params->sumUPi += params->uPiArr[i];
-    }
-
-    // hyperparameter for p( k(i,j) ) (i != j)
-    for( i = 0 ; i < sNo ; i++ ){
-        params->uKMat[i] = (double*)malloc( sNo * sizeof(double) );
-        params->sumUKArr[i] = 0.0;
-        for( j = 0 ; j < sNo ; j++ ){
-            params->uKMat[i][j] = 1.0;
-            if( j != i ){
-                params->sumUKArr[i] += params->uKMat[i][j];
-            }
-        }
-    }
-
-    double meanI = (double)xnWv->N / xnWv->T;
-    double sumPar = 0.0;
-
-    // hyperparameter for p( I(k) )
-    for( i = 0 ; i < sNo ; i++ ){
-        params->aIArr[i] = 1.0;
-        params->bIArr[i] = 1.0 / meanI;
-    }
-
-    // hyperparameter for p( E(i) )
-    for( i = 0 ; i < sNo ; i++ ){
-        params->uEArr[i] = 1.0;
-        params->vEArr[i] = 1.0;
-    }
-
-
-    // initial conditions
-    for( i = 0 ; i < sNo ; i++ ){
-        params->avgPi[i] = 1.0/(double)sNo + enoise(0.01/(double)sNo);
-        sumPar += params->avgPi[i];
-    }
-    for( i = 0 ; i < sNo ; i++ ){
-        params->avgPi[i] /= sumPar;
-        params->avgLnPi[i] = log( params->avgPi[i] );
-    }
-
-    for( i = 0 ; i < sNo ; i++ ){
-        params->avgI[i] = meanI + enoise(meanI/100.0);
-        params->avgLnI[i] = log( params->avgI[i] );
-    }
-
-    for( i = 0 ; i < sNo ; i++ ){
-        params->avgK[i][i] = meanI/100.0 + enoise(meanI/10000.0);
-        params->avgLnK[i][i] = log( params->avgK[i][i] );
-        params->avgLnKI[i] = log( params->avgK[i][i] + params->avgI[i] );
-        sumPar = 0.0;
-        for( j = 0 ; j < sNo ; j++ ){
-            if( j != i ){
-                params->avgK[i][j] = 1.0 + enoise(0.01);
-                sumPar += params->avgK[i][j];
-            }
-        }
-        for( j = 0 ; j < sNo ; j++ ){
-            if( j != i ){
-                params->avgK[i][j] /= sumPar;
-                params->avgLnK[i][j] = log( params->avgK[i][j] );
-            }
-        }
-    }
-
-    for( i = 0 ; i < sNo ; i++ ){
-        params->avgE[i] = 0.5 + enoise(0.01);
-        params->avgLnE[i][1] = log( params->avgE[i] );
-        params->avgLnE[i][0] = log( 1.0 - params->avgE[i] );
-    }
-
-    return params;
+    outputTsFretResults( xn, gv, iv, logFP );
 }
 
+//void outputResultsG_tsFret( xns, gv, ivs, logFP )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//FILE *logFP;
+//{
+//    outputTsFretResultsG( xns, gv, ivs, logFP );
+//}
 
-tsFretParameters *blankParameters_tsFret( sNo )
+
+void *newModelParameters_tsFret( xn, sNo )
+xnDataSet *xn;
 int sNo;
 {
     int i;
-    tsFretParameters *params = (tsFretParameters*)malloc( sizeof(tsFretParameters) );
-    params->uPiArr = (double*)malloc( sNo * sizeof(double) );
-    params->sumUPi = 0.0;
+    tsFretParameters *p = (void*)malloc( sizeof(tsFretParameters) );
+    
+    p->uPiArr = (double*)malloc( sNo * sizeof(double) );
+    p->sumUPi = 0.0;
     // hyperparameter for p( k(i,j) ) (i != j)
-    params->uKMat = (double**)malloc( sNo * sizeof(double*) );
-    params->sumUKArr = (double*)malloc( sNo * sizeof(double) );
+    p->uKMat = (double**)malloc( sNo * sizeof(double*) );
     for( i = 0 ; i < sNo ; i++ ){
-        params->uKMat[i] = (double*)malloc( sNo * sizeof(double) );
+        p->uKMat[i] = (double*)malloc( sNo * sizeof(double) );
     }
+    p->sumUKArr = (double*)malloc( sNo * sizeof(double) );
     // hyperparameter for p( I(k) )
-    params->aIArr = (double*)malloc( sNo * sizeof(double) );
-    params->bIArr = (double*)malloc( sNo * sizeof(double) );
+    p->aIArr = (double*)malloc( sNo * sizeof(double) );
+    p->bIArr = (double*)malloc( sNo * sizeof(double) );
     // hyperparameter for p( E(i) )
-    params->uEArr = (double*)malloc( sNo * sizeof(double) );
-    params->vEArr = (double*)malloc( sNo * sizeof(double) );
-
+    p->uEArr = (double*)malloc( sNo * sizeof(double) );
+    p->vEArr = (double*)malloc( sNo * sizeof(double) );
+    
     // parameters
-    params->avgPi = (double *)malloc( sNo * sizeof(double) );
-    params->avgLnPi = (double *)malloc( sNo * sizeof(double) );
-    params->avgI = (double *)malloc( sNo * sizeof(double) );
-    params->avgLnI = (double *)malloc( sNo * sizeof(double) );
-    params->avgK = (double **)malloc( sNo * sizeof(double*) );
-    params->avgLnK = (double **)malloc( sNo * sizeof(double*) );
+    p->avgPi = (double *)malloc( sNo * sizeof(double) );
+    p->avgLnPi = (double *)malloc( sNo * sizeof(double) );
+    p->avgI = (double *)malloc( sNo * sizeof(double) );
+    p->avgLnI = (double *)malloc( sNo * sizeof(double) );
+    p->avgK = (double **)malloc( sNo * sizeof(double*) );
+    p->avgLnK = (double **)malloc( sNo * sizeof(double*) );
     for( i = 0 ; i < sNo ; i++ ){
-        params->avgK[i] = (double *)malloc( sNo * sizeof(double) );
-        params->avgLnK[i] = (double *)malloc( sNo * sizeof(double) );
+        p->avgK[i] = (double *)malloc( sNo * sizeof(double) );
+        p->avgLnK[i] = (double *)malloc( sNo * sizeof(double) );
     }
-    params->avgLnKI = (double *)malloc( sNo * sizeof(double) );
-    params->avgE = (double *)malloc( sNo * sizeof(double) );
-    params->avgLnE = (double **)malloc( sNo * sizeof(double*) );
+    p->avgLnKI = (double *)malloc( sNo * sizeof(double) );
+    p->avgE = (double *)malloc( sNo * sizeof(double) );
+    p->avgLnE = (double **)malloc( sNo * sizeof(double*) );
     for( i = 0 ; i < sNo ; i++ )
-    {   params->avgLnE[i] = (double *)malloc( 2 * sizeof(double) );   }
+    {   p->avgLnE[i] = (double *)malloc( 2 * sizeof(double) );   }
+    
+    return p;
+}
 
-    params->Ni = (double *)malloc( sNo * sizeof(double) );
-    params->Ti = (double *)malloc( sNo * sizeof(double) );
-    params->eps = (double *)malloc( sNo * sizeof(double) );
-    params->Nii = (double *)malloc( sNo * sizeof(double) );
-    params->Nij = (double *)malloc( sNo * sizeof(double) );
-    params->Mij = (double **)malloc( sNo * sizeof(double*) );
-    for( i = 0 ; i < sNo ; i++ )
-    {   params->Mij[i] = (double *)malloc( sNo * sizeof(double) );   }
+void freeModelParameters_tsFret( p, xn, sNo )
+void **p;
+xnDataSet *xn;
+int sNo;
+{
+    tsFretParameters *gp = *p;
+    int i;
+    
+    free( gp->uPiArr );
+    for( i = 0 ; i < sNo ; i++ ){
+        free( gp->uKMat[i] );
+    }
+    free( gp->uKMat );
+    free( gp->sumUKArr );
+    free( gp->aIArr );
+    free( gp->bIArr );
+    free( gp->uEArr );
+    free( gp->vEArr );
+    
+    free( gp->avgPi );
+    free( gp->avgLnPi );
+    free( gp->avgI );
+    free( gp->avgLnI );
+    for( i = 0 ; i < sNo ; i++ ){
+        free( gp->avgK[i] );
+        free( gp->avgLnK[i] );
+    }
+    free( gp->avgK );
+    free( gp->avgLnK );
+    free( gp->avgLnKI );
+    free( gp->avgE );
+    for( i = 0 ; i < sNo ; i++ ){
+        free( gp->avgLnE[i] );
+    }
+    free( gp->avgLnE );
 
-    return params;
+    free( *p );
+    *p = NULL;
 }
 
 
-void freeParameters_tsFret( params )
-void *params;
+void *newModelStats_tsFret( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    tsFretParameters *p = (tsFretParameters*)params;
-    int i;
+//    if( isGlobalAnalysis == 0 ){
+        int sNo = gv->sNo;
+        tsFretStats *s = (tsFretStats*)malloc( sizeof(tsFretStats) );
+        
+        int i;
+        s->Ni = (double *)malloc( sNo * sizeof(double) );
+        s->Ti = (double *)malloc( sNo * sizeof(double) );
+        s->Nii = (double *)malloc( sNo * sizeof(double) );
+        s->Nij = (double *)malloc( sNo * sizeof(double) );
+        s->Mij = (double **)malloc( sNo * sizeof(double*) );
+        for( i = 0 ; i < sNo ; i++ )
+        {   s->Mij[i] = (double *)malloc( sNo * sizeof(double) );   }
+        s->eps = (double *)malloc( sNo * sizeof(double) );
 
-    free( p->uPiArr );
-    for( i = 0 ; i < p->sNo ; i++ ){
-        free( p->uKMat[i] );
-    }
-    free( p->uKMat );
-    free( p->sumUKArr );
-    free( p->aIArr );
-    free( p->bIArr );
-    free( p->uEArr );
-    free( p->vEArr );
+    return s;
     
-    free( p->avgPi );
-    free( p->avgLnPi );
-    for( i = 0 ; i < p->sNo ; i++ ){
-        free( p->avgK[i] );
-        free( p->avgLnK[i] );
-    }
-    free( p->avgK );
-    free( p->avgLnK );
-    free( p->avgLnKI );
-    free( p->avgI );
-    free( p->avgLnI );
-    free( p->avgE );
-    for( i = 0 ; i < p->sNo ; i++ ){
-        free( p->avgLnE[i] );
-    }
-    free( p->avgLnE );
-    free( p->Ni );
-    free( p->Ti );
-    free( p->eps );
-    free( p->Nii );
-    free( p->Nij );
-    for( i = 0 ; i < p->sNo ; i++ )
-    {   free( p->Mij[i] );   }
-    free( p->Mij );
+//    } else {
+//
+//        return NULL;
+//
+//    }
+}
+
+void freeModelStats_tsFret( s, xn, gv, iv )
+void **s;
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
+{
+//    if( isGlobalAnalysis == 0 ){
+        int sNo = gv->sNo;
+        tsFretStats *gs = *s;
+        int i;
+        free( gs->Ni );
+        free( gs->Ti );
+        free( gs->Nii );
+        free( gs->Nij );
+        for( i = 0 ; i < sNo ; i++ )
+        {   free( gs->Mij[i] );   }
+        free( gs->Mij );
+        free( gs->eps );
+
+        free( gs );
+        *s = NULL;
+//    }
+}
+
+//void *newModelStatsG_tsFret( xns, gv, ivs)
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//    int sNo = gv->sNo;
+//    tsGlobalStats *gs = (tsGlobalStats*)malloc( sizeof(tsGlobalStats) );
+//
+//    return gs;
+//}
+
+//void freeModelStatsG_tsFret( gs, xns, gv, ivs )
+//void **gs;
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//
+//    free( *gs );
+//    *gs = NULL;
+//}
+
+
+void initializeVbHmm_tsFret( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
+{
+    tsFretData *d = xn->data;
+    int sNo = gv->sNo;
+    tsFretParameters *p = gv->params;
+    int i, j;
     
-    free( p );
-    p = NULL;
+
+    // hyperparameter for p( pi(i) )
+    p->sumUPi = 0.0;
+    for( i = 0 ; i < sNo ; i++ ){
+        p->uPiArr[i] = 1.0;
+        p->sumUPi += p->uPiArr[i];
+    }
+
+    // hyperparameter for p( k(i,j) ) (i != j)
+    for( i = 0 ; i < sNo ; i++ ){
+        p->uKMat[i] = (double*)malloc( sNo * sizeof(double) );
+        p->sumUKArr[i] = 0.0;
+        for( j = 0 ; j < sNo ; j++ ){
+            p->uKMat[i][j] = 1.0;
+            if( j != i ){
+                p->sumUKArr[i] += p->uKMat[i][j];
+            }
+        }
+    }
+
+    double meanI = (double)xn->N / d->T;
+
+    // hyperparameter for p( I(k) )
+    for( i = 0 ; i < sNo ; i++ ){
+        p->aIArr[i] = 1.0;
+        p->bIArr[i] = 1.0 / meanI;
+    }
+
+    // hyperparameter for p( E(i) )
+    for( i = 0 ; i < sNo ; i++ ){
+        p->uEArr[i] = 1.0;
+        p->vEArr[i] = 1.0;
+    }
+
+    initialize_indVars_tsFret( xn, gv, iv );
+    
+    calcStatsVars_tsFret( xn, gv, iv );
+    maximization_tsFret( xn, gv, iv );
+}
+
+//void initializeVbHmmG_tsFret( xns, gv, ivs )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//}
+
+
+void initialize_indVars_tsFret( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
+{
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat;
+    
+    int i;
+    size_t n;
+    double sumPar;
+    for( n = 0 ; n < dLen ; n++ ){
+        sumPar = 0.0;
+        for( i = 0 ; i < sNo ; i++ ){
+            gmMat[n][i] = enoise(1.0) + 1.0;
+            sumPar += gmMat[n][i];
+        }
+        for( i = 0 ; i < sNo ; i++ ){
+            gmMat[n][i] /= sumPar;
+        }
+    }
+}
+
+
+xnDataSet *newXnDataSet_tsFret( filename )
+const char *filename;
+{
+    xnDataSet *xn = (xnDataSet*)malloc( sizeof(xnDataSet) );
+    xn->name = (char*)malloc( strlen(filename) + 2 );
+    strncpy( xn->name, filename, strlen(filename)+1 );
+    xn->data = (tsFretData*)malloc( sizeof(tsFretData) );
+    tsFretData *d = (tsFretData*)xn->data;
+    d->T = 0.0;
+    d->dt = NULL;
+    d->time = NULL;
+    d->ch = NULL;
+    return xn;
+}
+
+void freeXnDataSet_tsFret( xn )
+xnDataSet **xn;
+{
+    tsFretData *d = (tsFretData*)(*xn)->data;
+    free( d->dt );
+    free( d->time );
+    free( d->ch );
+    free( (*xn)->data );
+    free( (*xn)->name );
+    free( *xn );
+    *xn = NULL;
 }
 
 
@@ -275,34 +386,34 @@ void *params;
     }
 }
 
-double pTilde_xn_zn_tsFret( xnWv, n, i, params )
-xnDataSet *xnWv;
+double pTilde_xn_zn_tsFret( xn, n, i, params )
+xnDataSet *xn;
 size_t n;
 int i;
 void *params;
 {
     tsFretParameters *p = (tsFretParameters*)params;
-    tsFretData *xn = (tsFretData*)xnWv->data;
-    return exp( p->avgLnI[i] - (p->avgI[i] * xn[n].dt) + p->avgLnE[i][xn[n].ch] );
+    tsFretData *d = (tsFretData*)xn->data;
+    return exp( p->avgLnI[i] - (p->avgI[i] * d->dt[n]) + p->avgLnE[i][d->ch[n]] );
 }
 
 
 
-void calcStatsVars_tsFret( xnWv, cParams, params )
-xnDataSet *xnWv;
-vbHmmCommonParameters *cParams;
-void *params;
+void calcStatsVars_tsFret( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    tsFretParameters *p = (tsFretParameters*)params;
-    tsFretData *xn = (tsFretData*)xnWv->data;
-    size_t dLen = cParams->dLen;
-    int sNo = cParams->sNo;
-    double **gmMat = cParams->gmMat, ***xiMat = cParams->xiMat;
-    double *Ni = p->Ni, *Ti = p->Ti, *eps = p->eps;
-    double *Nii = p->Nii, *Nij = p->Nij, **Mij = p->Mij;
+    tsFretData *d = (tsFretData*)xn->data;
+    tsFretStats *s = (tsFretStats*)iv->stats;
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat, ***xiMat = iv->xiMat;
+    double *Ni = s->Ni, *Ti = s->Ti, *eps = s->eps;
+    double *Nii = s->Nii, *Nij = s->Nij, **Mij = s->Mij;
     size_t n;
     int i, j;
-
+    
     for( i = 0 ; i < sNo ; i++ ){
         Ni[i] = 1e-10;
         Ti[i] = 1e-10;
@@ -316,8 +427,8 @@ void *params;
     for( n = 0 ; n < dLen ; n++ ){
         for( i = 0 ; i < sNo ; i++ ){
             Ni[i]  += gmMat[n][i];
-            Ti[i]  += gmMat[n][i] * xn[n].dt;
-            eps[i] += gmMat[n][i] * xn[n].ch;
+            Ti[i]  += gmMat[n][i] * d->dt[n];
+            eps[i] += gmMat[n][i] * d->ch[n];
             Nii[i] += xiMat[n][i][i];
             for( j = 0 ; j < sNo ; j++ ){
                 if( j != i ){
@@ -333,23 +444,33 @@ void *params;
     }
 }
 
+//void calcStatsVarsG_tsFret( xns, gv, ivs )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//}
 
-void maximization_tsFret( xnWv, cParams, params )
-xnDataSet *xnWv;
-vbHmmCommonParameters *cParams;
-void *params;
+
+
+
+void maximization_tsFret( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    tsFretParameters *p = (tsFretParameters*)params;
-    int sNo = cParams->sNo;
-    double **gmMat = cParams->gmMat;
+    tsFretParameters *p = (tsFretParameters*)gv->params;
+    tsFretStats *s = (tsFretStats*)iv->stats;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat;
+    double *avgPi = p->avgPi, *avgLnPi = p->avgLnPi, **avgK = p->avgK, **avgLnK = p->avgLnK;
+    double *avgLnKI = p->avgLnKI, *avgI = p->avgI, *avgLnI = p->avgLnI;
+    double *avgE = p->avgE, **avgLnE = p->avgLnE;
     double *uPiArr = p->uPiArr, sumUPi = p->sumUPi, *aIArr = p->aIArr, *bIArr = p->bIArr;
     double **uKMat = p->uKMat, *sumUKArr = p->sumUKArr;
     double *uEArr = p->uEArr, *vEArr = p->vEArr;
-    double *avgPi = p->avgPi, *avgLnPi = p->avgLnPi, **avgK = p->avgK, **avgLnK = p->avgLnK;
-    double *avgLnKI = p->avgLnKI, *avgE = p->avgE, **avgLnE = p->avgLnE;
-    double *avgI = p->avgI, *avgLnI = p->avgLnI;
-    double *Ni = p->Ni, *Ti = p->Ti, *eps = p->eps;
-    double *Nii = p->Nii, *Nij = p->Nij, **Mij = p->Mij;
+    double *Ni = s->Ni, *Ti = s->Ti, *eps = s->eps;
+    double *Nii = s->Nii, *Nij = s->Nij, **Mij = s->Mij;
     int i, j;
 
     for( i = 0 ; i < sNo ; i++ ){
@@ -390,26 +511,35 @@ void *params;
         avgLnE[i][1]  = gsl_sf_psi( uEArr[i] + eps[i] );            // ln(E) for acceptor
         avgLnE[i][1] -= gsl_sf_psi( uEArr[i] + vEArr[i] + Ni[i] );
     }
-
 }
 
+//void maximizationG_tsFret( xns, gv, ivs )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//}
 
-double varLowerBound_tsFret( xnWv, cParams, params )
-xnDataSet *xnWv;
-vbHmmCommonParameters *cParams;
-void *params;
+
+
+
+double varLowerBound_tsFret( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    tsFretParameters *p = (tsFretParameters*)params;
-    size_t dLen = cParams->dLen;
-    int sNo = cParams->sNo;
-    double **gmMat = cParams->gmMat, *cn = cParams->cn;
+    tsFretParameters *p = (tsFretParameters*)gv->params;
+    tsFretStats *s = (tsFretStats*)iv->stats;
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat, *cn = iv->cn;
+    double *avgLnPi = p->avgLnPi, **avgLnK = p->avgLnK, *avgI = p->avgI, *avgLnI = p->avgLnI;
+    double *avgLnKI = p->avgLnKI, **avgLnE = p->avgLnE;
     double *uPiArr = p->uPiArr, sumUPi = p->sumUPi, *aIArr = p->aIArr, *bIArr = p->bIArr;
     double **uKMat = p->uKMat, *sumUKArr = p->sumUKArr;
     double *uEArr = p->uEArr, *vEArr = p->vEArr;
-    double *avgLnPi = p->avgLnPi, **avgLnK = p->avgLnK, *avgLnKI = p->avgLnKI;
-    double *avgI = p->avgI, *avgLnI = p->avgLnI, **avgLnE = p->avgLnE;
-    double *Ni = p->Ni, *Ti = p->Ti, *eps = p->eps;
-    double *Nii = p->Nii, *Nij = p->Nij, **Mij = p->Mij;
+    double *Ni = s->Ni, *Ti = s->Ti, *eps = s->eps;
+    double *Nii = s->Nii, *Nij = s->Nij, **Mij = s->Mij;
     size_t n;
     int i, j;
 
@@ -471,21 +601,32 @@ void *params;
     val += lnpX;
     
     return val;
-}    
+}
+
+//double varLowerBoundG_tsFret( xns, gv, ivs )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//}
 
 
-void reorderParameters_tsFret( cParams, params )
-vbHmmCommonParameters *cParams;
-void *params;
+
+
+void reorderParameters_tsFret( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 {
-    tsFretParameters *p = (tsFretParameters*)params;
-    size_t dLen = cParams->dLen;
-    int sNo = cParams->sNo;
-    double **gmMat = cParams->gmMat, ***xiMat = cParams->xiMat;
+    tsFretParameters *p = (tsFretParameters*)gv->params;
+    tsFretStats *s = (tsFretStats*)iv->stats;
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat, ***xiMat = iv->xiMat;
     double *avgPi = p->avgPi, *avgLnPi = p->avgLnPi, **avgK = p->avgK;
     double **avgLnK = p->avgLnK, *avgLnKI = p->avgLnKI;
     double *avgI = p->avgI, *avgLnI = p->avgLnI, *avgE = p->avgE, **avgLnE = p->avgLnE;
-    double *Ni = p->Ni, *Ti = p->Ti, *eps = p->eps;
+    double *Ni = s->Ni, *Ti = s->Ti, *eps = s->eps;
     size_t n;
     int i, j;
 
@@ -578,34 +719,50 @@ void *params;
     free( index );
 }
 
+//void reorderParametersG_tsFret( xns, gv, ivs )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//{
+//}
 
-void outputTsFretResults( cParams, params, results, s, out_name, logFP )
-vbHmmCommonParameters *cParams;
-tsFretParameters *params;
-vbHmmResults *results;
-int s;
-char *out_name;
+
+
+
+void outputTsFretResults( xn, gv, iv, logFP )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
 FILE *logFP;
 {
+    tsFretParameters *p = (tsFretParameters*)gv->params;
+    int sNo = gv->sNo;
     int i, j;
-    fprintf(logFP, "  results: K = %d \n", s);
 
-    fprintf(logFP, "   intensities: ( %g", params->avgI[0]);
-    for( i = 1 ; i < cParams->sNo ; i++ )
-    {   fprintf(logFP, ", %g", params->avgI[i]);   }
+    fprintf(logFP, "  results: K = %d \n", sNo);
+
+    fprintf(logFP, "   intensities: ( %g", p->avgI[0]);
+    for( i = 1 ; i < sNo ; i++ )
+    {   fprintf(logFP, ", %g", p->avgI[i]);   }
     fprintf(logFP, " ) \n");
 
-    fprintf(logFP, "   FRET efficiencies: ( %g", params->avgE[0]);
-    for( i = 1 ; i < cParams->sNo ; i++ ){
-        fprintf(logFP, ", %g", params->avgE[i]);
+    fprintf(logFP, "   FRET efficiencies: ( %g", p->avgE[0]);
+    for( i = 1 ; i < sNo ; i++ ){
+        fprintf(logFP, ", %g", p->avgE[i]);
     }
     fprintf(logFP, " ) \n");
 
+    fprintf(logFP, "   pi: ( %g", p->avgPi[0]);
+    for( i = 1 ; i < sNo ; i++ ){
+        fprintf(logFP, ", %g", p->avgPi[i]);
+    }
+    fprintf(logFP, " ) \n");
+    
     fprintf(logFP, "   k_matrix: [");
-    for( i = 0 ; i < cParams->sNo ; i++ ){
-            fprintf(logFP, " ( %g", params->avgK[i][0]);
-            for( j = 1 ; j < cParams->sNo ; j++ )
-            {   fprintf(logFP, ", %g", params->avgK[i][j]);   }
+    for( i = 0 ; i < sNo ; i++ ){
+            fprintf(logFP, " ( %g", p->avgK[i][0]);
+            for( j = 1 ; j < sNo ; j++ )
+            {   fprintf(logFP, ", %g", p->avgK[i][j]);   }
             fprintf(logFP, ")");
     }
     fprintf(logFP, " ] \n\n");
@@ -614,38 +771,45 @@ FILE *logFP;
     FILE *fp;
     size_t n;
 
-    sprintf( fn, "%s.param%03d", out_name, s );
+    sprintf( fn, "%s.param%03d", xn->name, sNo );
     if( (fp = fopen( fn, "w")) != NULL ){
-        fprintf(fp, "I, E");
-        for( i = 0 ; i < cParams->sNo ; i++ )
+        fprintf(fp, "I, E, pi");
+        for( i = 0 ; i < sNo ; i++ )
         {   fprintf(fp, ", K%dx", i);   }
         fprintf(fp, "\n");
 
-        for( i = 0 ; i < cParams->sNo ; i++ ){
-            fprintf(fp, "%g, %g", params->avgI[i], params->avgE[i]);
-            for( j = 0 ; j < cParams->sNo ; j++ )
-            {   fprintf(fp, ", %g", params->avgK[j][i]);   }
+        for( i = 0 ; i < sNo ; i++ ){
+            fprintf(fp, "%g, %g, %g", p->avgI[i], p->avgE[i], p->avgPi[i]);
+            for( j = 0 ; j < sNo ; j++ )
+            {   fprintf(fp, ", %g", p->avgK[j][i]);   }
             fprintf(fp, "\n");
         }
         fclose(fp);
     }
 
-    sprintf( fn, "%s.Lq%03d", out_name, s );
+    sprintf( fn, "%s.Lq%03d", xn->name, sNo );
     if( (fp = fopen( fn, "w")) != NULL ){
-        for( n = 0 ; n < results->iteration ; n++ ){
-            fprintf( fp, "%24.20e\n", results->LqArr[n] );
+        for( n = 0 ; n < gv->iteration ; n++ ){
+            fprintf( fp, "%24.20e\n", gv->LqArr[n] );
         }
         fclose(fp);
     }
 
-    sprintf( fn, "%s.maxS%03d", out_name, s );
+    sprintf( fn, "%s.maxS%03d", xn->name, sNo );
     if( (fp = fopen( fn, "w")) != NULL ){
-        for( n = 0 ; n < cParams->dLen ; n++ ){
-            fprintf( fp, "%d\n", results->maxSumTraj[n] );
+        for( n = 0 ; n < xn->N ; n++ ){
+            fprintf( fp, "%d\n", iv->stateTraj[n] );
         }
         fclose(fp);
     }
-
 }
+
+//void outputTsFretResultsG( xns, gv, ivs, logFP )
+//xnDataBundle *xns;
+//globalVars *gv;
+//indVarBundle *ivs;
+//FILE *logFP;
+//{
+//}
 
 //

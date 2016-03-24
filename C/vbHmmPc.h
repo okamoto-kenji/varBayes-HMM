@@ -16,6 +16,7 @@
 #define VBHMMPC_DEF
 
 #include "vbHmm_Common.h"
+//#include "gVbHmm_Common.h"
 
 // model-specific data
 typedef struct _pcData {
@@ -23,37 +24,61 @@ typedef struct _pcData {
     unsigned int *counts;
 } pcData;
 
+xnDataSet *newXnDataSet_pc( const char* );
+void freeXnDataSet_pc( xnDataSet** );
+
 // model-specific parameters
 typedef struct pcParameters_ {
-    int sNo;
-    double binSize;
     double *uPiArr, sumUPi;
     double **uAMat, *sumUAArr;
     double *aIArr, *bIArr;
     double *avgPi, *avgLnPi, **avgA, **avgLnA, *avgI, *avgLnI;
-    double *Ni, *Ci, *Mi, **Nij;
 } pcParameters;
-pcParameters *blankParameters_pc( int );
-void freePcDataSet( xnDataSet* );
+
+void *newModelParameters_pc( xnDataSet*, int );
+void freeModelParameters_pc( void**, xnDataSet*, int );
+
+// model-specific stats variables
+typedef struct _pcStats {
+    double *Ni, **Nij, *Ci, *Mi;
+} pcStats;
+
+void *newModelStats_pc( xnDataSet*, globalVars*, indVars* );
+void freeModelStats_pc( void**, xnDataSet*, globalVars*, indVars* );
+
+//// model-specific stats variables
+//typedef struct _pcGlobalStats {
+//    double *NiR, *CiR, *MiR, **NijR, *z1iR;
+//} pcGlobalStats;
+//void *newModelStatsG_pc( xnDataBundle*, globalVars*, indVarBundle* );
+//void freeModelStatsG_pc( void**, xnDataBundle*, globalVars*, indVarBundle* );
+
+void initializeVbHmm_pc( xnDataSet*, globalVars*, indVars* );
+//void initializeVbHmmG_pc( xnDataBundle*, globalVars*, indVarBundle* );
+void initialize_indVars_pc( xnDataSet*, globalVars*, indVars* );
 
 // model-specific output
-void outputPcResults( vbHmmCommonParameters*, pcParameters*, vbHmmResults*, int, char*, FILE* );
+void outputPcResults( xnDataSet*, globalVars*, indVars*, FILE* );
+//void outputPcResultsG( xnDataBundle*, globalVars*, indVarBundle*, FILE* );
 
 // functions required to work with vbHmm_Common
 void setFunctions_pc();
-void **mallocParameterArray_pc( size_t );
-void *initialize_vbHmm_pc( xnDataSet*, vbHmmCommonParameters* );
-void freeParameters_pc( void* );
+//void setGFunctions_pc();
 
 double pTilde_z1_pc( int, void* );
 double pTilde_zn_zn1_pc( int, int, void* );
 double pTilde_xn_zn_pc( xnDataSet*, size_t, int, void* );
 
-void calcStatsVars_pc( xnDataSet*, vbHmmCommonParameters*, void* );
-void maximization_pc( xnDataSet*, vbHmmCommonParameters*, void* );
-double varLowerBound_pc( xnDataSet*, vbHmmCommonParameters*, void* );
-void reorderParameters_pc( vbHmmCommonParameters*, void* );
-void outputResults_pc( vbHmmCommonParameters*, void*, vbHmmResults*, int, char*, FILE* );
+void calcStatsVars_pc( xnDataSet*, globalVars*, indVars* );
+//void calcStatsVarsG_pc( xnDataBundle*, globalVars*, indVarBundle* );
+void maximization_pc( xnDataSet*, globalVars*, indVars* );
+//void maximizationG_pc( xnDataBundle*, globalVars*, indVarBundle* );
+double varLowerBound_pc( xnDataSet*, globalVars*, indVars* );
+//double varLowerBoundG_pc( xnDataBundle*, globalVars*, indVarBundle* );
+void reorderParameters_pc( xnDataSet*, globalVars*, indVars* );
+//void reorderParametersG_pc( xnDataBundle*, globalVars*, indVarBundle* );
+void outputResults_pc( xnDataSet*, globalVars*, indVars*, FILE* );
+//void outputResultsG_pc( xnDataBundle*, globalVars*, indVarBundle*, FILE* );
 
 #endif
 

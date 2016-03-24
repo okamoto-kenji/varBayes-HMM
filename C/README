@@ -1,7 +1,7 @@
 Variational Bayes-Hidden Markov model (VB-HMM) analysis programs:
 
 Kenji Okamoto and Yasushi Sako, RIKEN
-revised: 2016.02.08
+revised: 2016.03.24
 
 System Requirements:
   VB-HMM softwares can be built on darwin or linux operating system.
@@ -16,7 +16,7 @@ Build:
 
   Avilable [command] is as follows:
     ts        : to build VB-HMM-TS (vbHmmTs)
-    fret      : to build VB-HMM-TS-FRET (vbHmmTsFret)
+    tsFret    : to build VB-HMM-TS-FRET (vbHmmTsFret)
     pc        : to build VB-HMM-PC (vbHmmPc)
     pcFret    : to build VB-HMM-PC-FRET (vbHmmPcFret)
     gauss     : to build VB-HMM-Gauss (vbHmmGauss)
@@ -30,7 +30,7 @@ Build:
 First Step:
   On Unix/Linux terminal, in the directory of source files, type
 
-    make fret
+    make tsFret
 
   to build VB-HMM-TS-FRET fostware.
   In order to execute, type, for example,
@@ -54,3 +54,7 @@ First Step:
       1st data : tick frequency
       2nd data- : time stamp of each photon in unit of ticks
 
+  Gauss models are adapted to global analysis.  If multiple data files
+  are given, global analysis is automatically activated.  Parameters are
+  optimized commonly to all data, while state transition trajectories are
+  optimized for individual trajectories.
