@@ -7,8 +7,8 @@
  *  Cellular Informatics Laboratory, Advance Science Institute, RIKEN, Japan.
  *  All rights reserved.
  *
- *  Ver. 1.0.0
- *  Last modified on 2015.09.17
+ *  Ver. 1.1.0
+ *  Last modified on 2016.11.04
  */
 
 #include "vbHmmGauss_Main.h"
@@ -58,6 +58,9 @@ int main( int argc, char *argv[] ){
         threshold = atof( argv[5] );
 
         strncpy( logFilename, argv[6], sizeof(logFilename) );
+        if( argc > 7 ){
+            strncat( logFilename, ".g", sizeof(logFilename) - strlen(logFilename) - 1 );
+        }
         strncat( logFilename, ".log", sizeof(logFilename) - strlen(logFilename) - 1 );
         logFP = fopen( logFilename, "w" );
     }

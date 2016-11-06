@@ -7,8 +7,8 @@
  *  Cellular Informatics Laboratory, Advance Science Institute, RIKEN, Japan.
  *  All rights reserved.
  *
- *  Ver. 1.0.0
- *  Last modified on 2015.09.17
+ *  Ver. 1.1.0
+ *  Last modified on 2016.11.04
  */
 
 #include "vbHmmGauss.h"
@@ -303,9 +303,9 @@ indVars *iv;
     
     // hyper parameter for p( mu(k), lm(k) )
     for( i = 0 ; i < sNo ; i++ ){
-        p->uBtArr[i] = precX / 250.0;
+        p->uBtArr[i] = 0.25;
         p->uMuArr[i] = meanX;
-        p->uAArr[i] = 2.5;
+        p->uAArr[i] = 0.01 * varX;
         p->uBArr[i] = 0.01;
     }
     
@@ -349,7 +349,7 @@ indVarBundle *ivs;
     }
     varX /= (double)(totalN - 1);
     precX = 1.0 / varX;
-    
+
     p->sumUPi = 0.0;
     for( i = 0 ; i < sNo ; i++ ){
         p->uPiArr[i] = 1.0;
@@ -370,9 +370,9 @@ indVarBundle *ivs;
     
     // hyper parameter for p( mu(k), lm(k) )
     for( i = 0 ; i < sNo ; i++ ){
-        p->uBtArr[i] = precX / 250.0;
+        p->uBtArr[i] = 0.25;
         p->uMuArr[i] = meanX;
-        p->uAArr[i] = 2.5;
+        p->uAArr[i] = 0.01 * varX;
         p->uBArr[i] = 0.01;
     }
 
@@ -460,7 +460,7 @@ void *params;
     gaussData *d = (gaussData*)xn->data;
     double val;
     val  = p->avgLnLm[i] - log(2.0 * M_PI);
-    val -= 1.0/p->btMu[i] + p->aLm[i] / p->bLm[i] * pow( d->v[n] - p->mu0[i], 2.0);
+    val -= 1.0/p->btMu[i] + p->aLm[i] / p->bLm[i] * pow( d->v[n] - p->avgMu[i], 2.0);
     return exp(val / 2.0);
 }
 
@@ -780,6 +780,7 @@ indVars *iv;
     double **gmMat = iv->gmMat, ***xiMat = iv->xiMat;
     double *avgPi = p->avgPi, *avgLnPi = p->avgLnPi, **avgA = p->avgA, **avgLnA = p->avgLnA;
     double *avgMu = p->avgMu, *avgLm = p->avgLm, *avgLnLm = p->avgLnLm;
+    double *btMu = p->btMu, *aLm = p->aLm, *bLm = p->bLm;
     double *Ni = s->Ni;
     size_t n;
     int i, j;
@@ -820,6 +821,17 @@ indVars *iv;
     for( i = 0 ; i < sNo ; i++ ){   store[index[i]] = avgLnLm[i];   }
     for( i = 0 ; i < sNo ; i++ ){   avgLnLm[i] = store[i];   }
 
+    //
+    for( i = 0 ; i < sNo ; i++ ){   store[index[i]] = btMu[i];   }
+    for( i = 0 ; i < sNo ; i++ ){   btMu[i] = store[i];   }
+
+    for( i = 0 ; i < sNo ; i++ ){   store[index[i]] = aLm[i];   }
+    for( i = 0 ; i < sNo ; i++ ){   aLm[i] = store[i];   }
+
+    for( i = 0 ; i < sNo ; i++ ){   store[index[i]] = bLm[i];   }
+    for( i = 0 ; i < sNo ; i++ ){   bLm[i] = store[i];   }
+    //
+    
     for( j = 0 ; j < sNo ; j++ ){
         for( i = 0 ; i < sNo ; i++ ){   s2D[index[i]][index[j]] = avgA[i][j];   }
     }
@@ -867,6 +879,7 @@ indVarBundle *ivs;
     gaussParameters *p = (gaussParameters*)gv->params;
     double *avgPi = p->avgPi, *avgLnPi = p->avgLnPi, **avgA = p->avgA, **avgLnA = p->avgLnA;
     double *avgMu = p->avgMu, *avgLm = p->avgLm, *avgLnLm = p->avgLnLm;
+    double *btMu = p->btMu, *aLm = p->aLm, *bLm = p->bLm;
     size_t n;
     int i, j, r;
 
@@ -906,6 +919,17 @@ indVarBundle *ivs;
     for( i = 0 ; i < sNo ; i++ ){   store[index[i]] = avgLnLm[i];   }
     for( i = 0 ; i < sNo ; i++ ){   avgLnLm[i] = store[i];   }
 
+    //
+    for( i = 0 ; i < sNo ; i++ ){   store[index[i]] = btMu[i];   }
+    for( i = 0 ; i < sNo ; i++ ){   btMu[i] = store[i];   }
+    
+    for( i = 0 ; i < sNo ; i++ ){   store[index[i]] = aLm[i];   }
+    for( i = 0 ; i < sNo ; i++ ){   aLm[i] = store[i];   }
+    
+    for( i = 0 ; i < sNo ; i++ ){   store[index[i]] = bLm[i];   }
+    for( i = 0 ; i < sNo ; i++ ){   bLm[i] = store[i];   }
+    //
+    
     for( j = 0 ; j < sNo ; j++ ){
         for( i = 0 ; i < sNo ; i++ ){   s2D[index[i]][index[j]] = avgA[i][j];   }
     }
@@ -1019,6 +1043,16 @@ FILE *logFP;
         fclose(fp);
     }
 
+#ifdef OUTPUT_MAX_GAMMA
+    sprintf( fn, "%s.maxG%03d", xn->name, sNo );
+    if( (fp = fopen( fn, "w")) != NULL ){
+        for( n = 0 ; n < xn->N ; n++ ){
+            fprintf( fp, "%d\n", iv->gammaTraj[n] );
+        }
+        fclose(fp);
+    }
+#endif
+
     sprintf( fn, "%s.maxS%03d", xn->name, sNo );
     if( (fp = fopen( fn, "w")) != NULL ){
         for( n = 0 ; n < xn->N ; n++ ){
@@ -1071,7 +1105,7 @@ FILE *logFP;
     FILE *fp;
     size_t n;
 
-    sprintf( fn, "%s.param%03d", xns->xn[0]->name, sNo );
+    sprintf( fn, "%s.g.param%03d", xns->xn[0]->name, sNo );
     if( (fp = fopen( fn, "w")) != NULL ){
         fprintf(fp, "mu, lambda, pi");
         for( i = 0 ; i < sNo ; i++ )
@@ -1087,16 +1121,43 @@ FILE *logFP;
         fclose(fp);
     }
     
-    sprintf( fn, "%s.Lq%03d", xns->xn[0]->name, sNo );
+    sprintf( fn, "%s.g.Lq%03d", xns->xn[0]->name, sNo );
     if( (fp = fopen( fn, "w")) != NULL ){
         for( n = 0 ; n < gv->iteration ; n++ ){
             fprintf( fp, "%24.20e\n", gv->LqArr[n] );
         }
         fclose(fp);
     }
-    
-    sprintf( fn, "%s.maxS%03d", xns->xn[0]->name, sNo );
-    int flag = 0;
+
+    int flag;
+#ifdef OUTPUT_MAX_GAMMA
+    sprintf( fn, "%s.g.maxG%03d", xns->xn[0]->name, sNo );
+    flag = 0;
+    if( (fp = fopen( fn, "w")) != NULL ){
+        n = 0;
+        do{
+            flag = 1;
+            for( r = 0 ; r < rNo ; r++ ){
+                xnDataSet *xn = xns->xn[r];
+                indVars *iv = ivs->indVars[r];
+                
+                if( r > 0 ){
+                    fprintf( fp, "," );
+                }
+                if( n < xn->N ){
+                    fprintf( fp, "%d", iv->gammaTraj[n] );
+                }
+                flag &= (n >= (xn->N - 1));
+            }
+            fprintf( fp, "\n" );
+            n++;
+        }while( !flag );
+        fclose(fp);
+    }
+#endif
+
+    sprintf( fn, "%s.g.maxS%03d", xns->xn[0]->name, sNo );
+    flag = 0;
     if( (fp = fopen( fn, "w")) != NULL ){
         n = 0;
         do{

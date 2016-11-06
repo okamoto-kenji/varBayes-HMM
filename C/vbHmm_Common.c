@@ -9,8 +9,8 @@
  *  Cellular Informatics Laboratory, Advance Science Institute, RIKEN, Japan.
  *  All rights reserved.
  *
- *  Ver. 1.0.0
- *  Last modified on 2015.09.17
+ *  Ver. 1.1.0
+ *  Last modified on 2016.11.04
  */
 
 #include "vbHmm_Common.h"
@@ -207,6 +207,9 @@ globalVars *gv;
     
     iv->stats = (*newModelStats)( xn, gv, iv );
     
+#ifdef OUTPUT_MAX_GAMMA
+    iv->gammaTraj = NULL;
+#endif
     iv->stateTraj = NULL;
     
     return iv;
@@ -253,6 +256,9 @@ indVars **iv;
     {   free( (*iv)->valpXnZn[n] );  }
     free( (*iv)->valpXnZn );
     
+#ifdef OUTPUT_MAX_GAMMA
+    free( (*iv)->gammaTraj );
+#endif
     free( (*iv)->stateTraj );
     
     (*freeModelStats)( &(*iv)->stats, xn, gv, (*iv) );
@@ -299,6 +305,9 @@ FILE *logFP;
         i--;
     }
     (*reorderParameters)( xn, gv, iv );
+#ifdef OUTPUT_MAX_GAMMA
+    maxGamma( xn, gv, iv );
+#endif
     maxSum( xn, gv, iv );
 
     gv->iteration = i+1;
@@ -401,6 +410,39 @@ indVars *iv;
         }
     }
 }
+
+
+// construct most likely trajectory to trace max Gamma
+#ifdef OUTPUT_MAX_GAMMA
+int *maxGamma( xn, gv, iv )
+xnDataSet *xn;
+globalVars *gv;
+indVars *iv;
+{
+    size_t dLen = xn->N;
+    int sNo = gv->sNo;
+    double **gmMat = iv->gmMat;
+    size_t n;
+    int i, j;
+    
+    iv->gammaTraj = (int*)realloc( iv->gammaTraj, dLen * sizeof(int) );
+    int maxI;
+    double maxG;
+
+    for( n = 0 ; n < dLen ; n++ ){
+        maxG = - 1.0;
+        for( i = 0 ; i < sNo ; i++ ){
+            if( gmMat[n][i] > maxG ){
+                maxG = gmMat[n][i];
+                maxI = i;
+            }
+        }
+        iv->gammaTraj[n] = maxI;
+    }
+    
+    return iv->gammaTraj;
+}
+#endif
 
 
 // Viterbi algorithm to construct most likely trajectory

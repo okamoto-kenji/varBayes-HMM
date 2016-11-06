@@ -120,7 +120,7 @@ $\lambda_i$ に依存する項だけ取り出して、
 \end{align}
 ただし、
 \begin{align}
-  a_i^\lambda  =&  u_i^a + \frac{1}{2} \mathbb{E}_{\bf Z}\left[ \sum_{m=1}^N z_{mi} \right] + \frac{1}{2}  \\
+  a_i^\lambda  =&  u_i^a + \frac{1}{2} \mathbb{E}_{\bf Z}\left[ \sum_{m=1}^N z_{mi} \right]  \\
   =&  u_i^a + \frac{N_i}{2}  \\
 %%%%
   b_i^\lambda  =&  u_i^b + \frac{1}{2} \mathbb{E}_{\bf Z}\left[ \sum_{m=1}^N z_{mi} \left( {x_m} - \mu_i \right)^2 \right]  
@@ -256,12 +256,13 @@ $\mathbb{E}\bigl[\ln p({\boldsymbol \pi})\bigr]$, $\mathbb{E}\bigl[\ln p({\bf A}
 
 \subsection{ global analysis 対応 }
 
-M-step と lower bounds の計算で、$N_i$, $M_i$, $N_{ij}$, $\overline{x}_i$, ${\bf S}_i$ をそれぞれ
+M-step と lower bounds の計算で、$N_i$, $N_{ij}$, $M_i$, $\overline{x}_i$, ${\bf S}_i$ をそれぞれ
 \begin{align}
-  N_i^R  =\;&  \sum_{r=1}^R \sum_m^N \overline{z_{mi}^R}  \\
-  M_i^R  =\;&  \sum_j^K N_{ij}^R = \sum_{r=1}^R \sum_{n=2}^{N^{(r)}} \sum_j^K \overline{ z_{n-1, i}^{(r)} z_{nj}^{(r)} }  \\
-  \overline{x}_i^R  =\;&  \frac{1}{N_i^R} \sum_{r=1}^R \sum_m^N \overline{z_{mi}^R} \cdot x_m^R  \\
-  {\bf S}_i^R  =\;&  \frac{1}{N_i^R} \sum_{r=1}^R \sum_{m=1}^N \overline{z_{mi}^R} (x_m^R - \overline{x}_i^R)^2
+  N_i^R  =\;&  \sum_{r=1}^R \sum_{m=1}^{N^{(r)}} \overline{z_{mi}^{(r)}}  \\
+  N_{ij}^R  =\;&  \sum_{r=1}^R \sum_{n=2}^{N^{(r)}} \overline{ z_{n-1, i}^{(r)} z_{nj}^{(r)} }  \\
+  M_i^R  =\;&  \sum_{j=1}^K N_{ij}^R = \sum_{r=1}^R \sum_{n=2}^{N^{(r)}} \sum_{j=1}^K \overline{ z_{n-1, i}^{(r)} z_{nj}^{(r)} }  \\
+  \overline{x_i^R}  =\;&  \frac{1}{N_i^R} \sum_{r=1}^R \sum_{m=1}^{N^{(r)}} \overline{z_{mi}^{(r)}} \cdot x_m^{(r)}  \\
+  {\bf S}_i^R  =\;&  \frac{1}{N_i^R} \sum_{r=1}^R \sum_{m=1}^N \overline{z_{mi}^{(r)}} \left(x_m^{(r)} - \overline{x_i^R} \right)^2
 \end{align}
 に置き換えて計算すればよい。
 

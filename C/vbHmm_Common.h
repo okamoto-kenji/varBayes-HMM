@@ -7,8 +7,8 @@
  *  Cellular Informatics Laboratory, Advance Science Institute, RIKEN, Japan.
  *  All rights reserved.
  *
- *  Ver. 1.0.0
- *  Last modified on 2015.09.17
+ *  Ver. 1.1.0
+ *  Last modified on 2016.11.04
  */
 
 #ifndef VBHMMCOMMON_DEF
@@ -17,6 +17,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+
+// uncomment to enable calculation & output of max gamma trajectories
+//#define OUTPUT_MAX_GAMMA
 
 typedef struct _individualDataVariables{    // variables for individual trajectories
     // stats
@@ -29,7 +32,10 @@ typedef struct _individualDataVariables{    // variables for individual trajecto
     void *stats;
 
     // results
-    int *stateTraj;
+#ifdef OUTPUT_MAX_GAMMA
+    int *gammaTraj;                     // state trajectory by max gamma
+#endif
+    int *stateTraj;                     // state trajectory by max sum
 } indVars;
 
 typedef struct _globalVariables{        // global variables
@@ -66,6 +72,10 @@ void freeIndVars( xnDataSet*, globalVars*, indVars** );
 double vbHmm_Main( xnDataSet*, globalVars*, indVars* ,int ,double, FILE* );
 // Baum-Welch algorithm
 void forwardBackward( xnDataSet*, globalVars*, indVars* );
+// pick up state trajectory by maximum gamma
+#ifdef OUTPUT_MAX_GAMMA
+int *maxGamma( xnDataSet*, globalVars*, indVars* );
+#endif
 // Viterbi algorithm
 int *maxSum( xnDataSet*, globalVars*, indVars* );
 

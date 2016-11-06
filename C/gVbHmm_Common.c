@@ -9,8 +9,8 @@
  *  Cellular Informatics Laboratory, Advance Science Institute, RIKEN, Japan.
  *  All rights reserved.
  *
- *  Ver. 1.0.0
- *  Last modified on 2015.09.17
+ *  Ver. 1.1.0
+ *  Last modified on 2016.11.04
  */
 
 #include "gVbHmm_Common.h"
@@ -66,7 +66,7 @@ int maxIteration;
 double threshold;
 FILE *logFP;
 {
-    int s, t, r;
+    int s, t;
     if( logFP != NULL ){
         fprintf( logFP, "  No. of states from %d to %d,  trials = %d, ", sFrom, sTo, trials);
         fprintf( logFP, "  analyze:  maxIteration = %d,  threshold = %g \n\n", maxIteration, threshold);
@@ -83,7 +83,7 @@ FILE *logFP;
 #pragma omp parallel for private(t)
 #endif
         for( t = 0 ; t < trials ; t++ ){
-            int st = (s - sFrom) * trials + t;
+            int r, st = (s - sFrom) * trials + t;
             gvArray[t] = newGlobalVarsG( xns, s );
 
             ivsArray[t] = (indVarBundle*)malloc( sizeof(indVarBundle) );
@@ -112,6 +112,7 @@ FILE *logFP;
         (*outputResultsG)( xns, gvArray[maxT], ivsArray[maxT], logFP );
         
         for( t = 0 ; t < trials ; t++ ){
+            int r;
             for( r = 0 ; r < rNo ; r++ ){
                 freeIndVars( xns->xn[r], gvArray[t], &ivsArray[t]->indVars[r] );
             }
@@ -135,7 +136,7 @@ FILE *logFP;
     char fn[256];
     FILE *fp = NULL;
     strncpy( fn, xns->xn[0]->name, sizeof(fn) );
-    strncat( fn, ".LqVsK", sizeof(fn) - strlen(fn) - 1 );
+    strncat( fn, ".g.LqVsK", sizeof(fn) - strlen(fn) - 1 );
     if( (fp = fopen( fn, "w" )) != NULL ){
         for( s = 0 ; s < trials * (sTo - sFrom + 1) ; s++ ){
             fprintf( fp, "%2d, %.20g\n", (s/trials) + sFrom, LqVsK[s] );
@@ -213,10 +214,12 @@ FILE *logFP;
     }
     (*reorderParametersG)( xns, gv, ivs );
     for( r = 0 ; r < rNo ; r++ ){
+#ifdef OUTPUT_MAX_GAMMA
+        maxGamma( xns->xn[r], gv, ivs->indVars[r] );
+#endif
         maxSum( xns->xn[r], gv, ivs->indVars[r] );
     }
-    
-    //    results->iteration = i+1;
+
     gv->iteration = i+1;
     *LqArr = realloc( *LqArr, (i+1) * sizeof(double) );
     gv->maxLq = (*LqArr)[i];
