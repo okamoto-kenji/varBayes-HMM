@@ -1,7 +1,7 @@
 Variational Bayes-Hidden Markov model (VB-HMM) analysis programs:
 
 Kenji Okamoto and Yasushi Sako, RIKEN
-revised: 2016.03.24
+revised: 2018.11.26
 
 System Requirements:
   VB-HMM softwares can be built on darwin or linux operating system.
@@ -15,46 +15,35 @@ Build:
     make [command]
 
   Available [command] is as follows:
-    ts        : to build VB-HMM-TS (vbHmmTs)
-    tsFret    : to build VB-HMM-TS-FRET (vbHmmTsFret)
-    pc        : to build VB-HMM-PC (vbHmmPc)
-    pcFret    : to build VB-HMM-PC-FRET (vbHmmPcFret)
-    gauss     : to build VB-HMM-Gauss (vbHmmGauss)
-    gaussInt  : to build VB-HMM-Gauss for SM-Intensity (vbHmmGaussInt)
     gaussDiff : to build VB-HMM-Gauss for Diffusion (vbHmmGaussDiff)
     template  : to build template VB-HMM (vbHmm_template)
-    all       : to build all above
-    [blank]   : same as 'all'
     clean     : delete binary files
 
 First Step:
   On Unix/Linux terminal, in the directory of source files, type
 
-    make tsFret
+    make gaussDiff
 
-  to build VB-HMM-TS-FRET software.
+  to build VB-HMM-GAUSS-DIFFUSION software.
   In order to execute, type, for example,
 
-    vbHmmTsFret 2 20 5 1000 1e-10 D-data A-data
+    vbHmmGaussDiff 2 20 5 1000 1e-10 data
 
   where parameters mean:
     try NoS (number of states) from 2 to 20
-      (if maximum of lower bound is found, NoS up to +2 is analyzed)
+      (if maximum of lower bound is found, NoS up to +3 is analyzed)
     repeat 5 analysis at each NoS with changing initial conditions
     calculation continues to 1000 iteration at maximum
       even if calculation does not converges
     calculation ends if lower bounds gets lower than 1e-10
       (smaller value make calculation converges well
        but takes longer time)
-    D-data : file name for donor time stamp data
-    A-data : file name for acceptor time stamp data
+    data : file name for donor time stamp data
 
-    data file format for VB-HMM-TS-FRET software:
-      binary file of 32bit unsigned integer
-      1st data : tick frequency
-      2nd data- : time stamp of each photon in unit of ticks
+    data file format for VB-HMM-GAUSS-DIFFUSION software:
+      text file, 1 data per line
 
-  Gauss models are adapted to global analysis.  If multiple data files
+  Gauss model is adapted to global analysis.  If multiple data files
   are given, global analysis is automatically activated.  Parameters are
   optimized commonly to all data, while state transition trajectories are
   optimized for individual trajectories.
