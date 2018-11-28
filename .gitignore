@@ -6,3 +6,7 @@
 
 # wild cards
 *.o
+*.aux
+*.log
+*.synctex.gz
+*.toc
